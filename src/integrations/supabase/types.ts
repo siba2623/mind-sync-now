@@ -14,7 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activities: {
+        Row: {
+          best_for: string
+          color_gradient: string
+          created_at: string
+          description: string
+          duration: string
+          icon_name: string
+          id: string
+          title: string
+        }
+        Insert: {
+          best_for: string
+          color_gradient: string
+          created_at?: string
+          description: string
+          duration: string
+          icon_name: string
+          id?: string
+          title: string
+        }
+        Update: {
+          best_for?: string
+          color_gradient?: string
+          created_at?: string
+          description?: string
+          duration?: string
+          icon_name?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      activity_completions: {
+        Row: {
+          activity_id: string
+          completed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          completed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          completed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_completions_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mood_entries: {
+        Row: {
+          created_at: string
+          id: string
+          mood_value: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mood_value: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mood_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
