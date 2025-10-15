@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Wind, Zap, Music, Heart, CheckCircle2, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { User, Session } from "@supabase/supabase-js";
+import MoodSound from "@/components/MoodSound";
 
 const iconMap: Record<string, any> = {
   Wind,
@@ -30,6 +31,7 @@ const Activities = () => {
   const [completedActivities, setCompletedActivities] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [currentMood, setCurrentMood] = useState<string>('calm');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -60,9 +62,29 @@ const Activities = () => {
   }, [user]);
 
   const loadActivities = async () => {
-    const { data } = await supabase.from("activities").select("*");
-    if (data) {
-      setActivities(data);
+    const [activitiesResult, moodResult] = await Promise.all([
+      supabase.from("activities").select("*"),
+      supabase
+        .from("mood_entries")
+        .select("mood_value")
+        .order("created_at", { ascending: false })
+        .limit(1)
+    ]);
+
+    if (activitiesResult.data) {
+      setActivities(activitiesResult.data);
+    }
+
+    if (moodResult.data?.[0]) {
+      // Convert mood value (1-5) to descriptive mood
+      const moodMap = {
+        1: 'sad',
+        2: 'anxious',
+        3: 'neutral',
+        4: 'calm',
+        5: 'happy'
+      };
+      setCurrentMood(moodMap[moodResult.data[0].mood_value as keyof typeof moodMap] || 'calm');
     }
   };
 
@@ -157,6 +179,11 @@ const Activities = () => {
           <p className="text-lg text-muted-foreground">
             Quick, science-backed activities to help you feel better right now
           </p>
+        </div>
+
+        {/* Mood-Based Music */}
+        <div className="mb-12 animate-in fade-in duration-700">
+          <MoodSound currentMood={currentMood} />
         </div>
 
         {/* Activities Grid */}
