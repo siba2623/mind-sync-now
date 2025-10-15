@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Sparkles, TrendingUp, Activity } from "lucide-react";
+import { Sparkles, TrendingUp, Activity, LogOut } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { User, Session } from "@supabase/supabase-js";
 
 const moods = [
   { emoji: "😊", label: "Great", value: 5, color: "from-green-400 to-emerald-400" },
@@ -15,16 +19,115 @@ const moods = [
 const Dashboard = () => {
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [stats, setStats] = useState({ streak: 0, avgMood: 0, activitiesCompleted: 0 });
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = () => {
-    if (selectedMood !== null) {
-      setSubmitted(true);
-      setTimeout(() => {
-        setSubmitted(false);
-        setSelectedMood(null);
-      }, 2000);
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      loadStats();
+    }
+  }, [user]);
+
+  const loadStats = async () => {
+    if (!user) return;
+
+    try {
+      const { data: moodData } = await supabase
+        .from("mood_entries")
+        .select("mood_value, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      const { data: completionsData } = await supabase
+        .from("activity_completions")
+        .select("id")
+        .eq("user_id", user.id);
+
+      if (moodData && moodData.length > 0) {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekMoods = moodData.filter(
+          (m) => new Date(m.created_at) >= weekAgo
+        );
+        const avgMood = weekMoods.reduce((acc, m) => acc + m.mood_value, 0) / weekMoods.length;
+
+        const dates = new Set(
+          moodData.map((m) => new Date(m.created_at).toDateString())
+        );
+        const streak = Array.from(dates).length;
+
+        setStats({
+          streak,
+          avgMood: Math.round(avgMood * 10) / 10,
+          activitiesCompleted: completionsData?.length || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading stats:", error);
     }
   };
+
+  const handleSubmit = async () => {
+    if (selectedMood !== null && user) {
+      try {
+        const { error } = await supabase.from("mood_entries").insert({
+          user_id: user.id,
+          mood_value: selectedMood,
+        });
+
+        if (error) throw error;
+
+        setSubmitted(true);
+        toast({
+          title: "Mood logged!",
+          description: "Your mood has been recorded successfully.",
+        });
+
+        setTimeout(() => {
+          setSubmitted(false);
+          setSelectedMood(null);
+          loadStats();
+        }, 2000);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to log mood",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -48,6 +151,10 @@ const Dashboard = () => {
                   Activities
                 </Button>
               </Link>
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
             </div>
           </div>
         </div>
@@ -101,9 +208,7 @@ const Dashboard = () => {
                       Mood Logged!
                     </>
                   ) : (
-                    <>
-                      Log Mood
-                    </>
+                    <>Log Mood</>
                   )}
                 </Button>
                 {!submitted && (
@@ -125,7 +230,7 @@ const Dashboard = () => {
               </div>
               <h3 className="font-semibold">Your Streak</h3>
             </div>
-            <p className="text-3xl font-bold text-primary">7 days</p>
+            <p className="text-3xl font-bold text-primary">{stats.streak} days</p>
             <p className="text-sm text-muted-foreground mt-1">Keep it going!</p>
           </Card>
 
@@ -136,7 +241,9 @@ const Dashboard = () => {
               </div>
               <h3 className="font-semibold">This Week</h3>
             </div>
-            <p className="text-3xl font-bold text-secondary">4.2</p>
+            <p className="text-3xl font-bold text-secondary">
+              {stats.avgMood > 0 ? stats.avgMood : "—"}
+            </p>
             <p className="text-sm text-muted-foreground mt-1">Average mood</p>
           </Card>
 
@@ -147,7 +254,7 @@ const Dashboard = () => {
               </div>
               <h3 className="font-semibold">Activities</h3>
             </div>
-            <p className="text-3xl font-bold text-accent">12</p>
+            <p className="text-3xl font-bold text-accent">{stats.activitiesCompleted}</p>
             <p className="text-sm text-muted-foreground mt-1">Completed</p>
           </Card>
         </div>

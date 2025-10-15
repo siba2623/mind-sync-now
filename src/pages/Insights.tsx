@@ -1,39 +1,108 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { TrendingUp, Calendar, Activity, ArrowLeft } from "lucide-react";
+import { TrendingUp, Calendar, Activity, ArrowLeft, LogOut } from "lucide-react";
+import type { User, Session } from "@supabase/supabase-js";
 
 const Insights = () => {
-  const weeklyMoods = [
-    { day: "Mon", value: 4, emoji: "🙂" },
-    { day: "Tue", value: 5, emoji: "😊" },
-    { day: "Wed", value: 3, emoji: "😐" },
-    { day: "Thu", value: 4, emoji: "🙂" },
-    { day: "Fri", value: 5, emoji: "😊" },
-    { day: "Sat", value: 4, emoji: "🙂" },
-    { day: "Sun", value: 3, emoji: "😐" },
-  ];
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [weeklyMoods, setWeeklyMoods] = useState<any[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      loadWeeklyMoods();
+    }
+  }, [user]);
+
+  const loadWeeklyMoods = async () => {
+    if (!user) return;
+
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const weekData = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      const { data } = await supabase
+        .from("mood_entries")
+        .select("mood_value")
+        .eq("user_id", user.id)
+        .gte("created_at", date.toISOString())
+        .lt("created_at", nextDay.toISOString());
+
+      const avgMood = data && data.length > 0
+        ? data.reduce((acc, m) => acc + m.mood_value, 0) / data.length
+        : 0;
+
+      const moodEmojis = ["", "😢", "😔", "😐", "🙂", "😊"];
+      weekData.push({
+        day: days[date.getDay() === 0 ? 6 : date.getDay() - 1],
+        value: avgMood,
+        emoji: avgMood > 0 ? moodEmojis[Math.round(avgMood)] : "—",
+      });
+    }
+
+    setWeeklyMoods(weekData);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
 
   const insights = [
     {
       icon: TrendingUp,
-      title: "Positive Trend",
-      description: "Your mood has improved by 15% this week compared to last week.",
+      title: "Track Your Patterns",
+      description: "Continue logging your mood daily to unlock personalized insights about what helps you thrive.",
       color: "text-secondary",
     },
     {
       icon: Calendar,
-      title: "Best Days",
-      description: "You feel best on Tuesdays and Fridays. Try to schedule important tasks then.",
+      title: "Build Consistency",
+      description: "Regular check-ins help you understand emotional patterns and identify triggers over time.",
       color: "text-primary",
     },
     {
       icon: Activity,
       title: "Activity Impact",
-      description: "Days with morning activities show 20% higher mood ratings.",
+      description: "Complete micro-activities to see correlations between actions and mood improvements.",
       color: "text-accent",
     },
   ];
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -44,12 +113,18 @@ const Insights = () => {
             <Link to="/" className="text-2xl font-bold bg-gradient-calm bg-clip-text text-transparent">
               MindSync
             </Link>
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                Back
+            <div className="flex gap-4">
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
+                <LogOut className="w-4 h-4" />
+                Logout
               </Button>
-            </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -70,7 +145,7 @@ const Insights = () => {
             <TrendingUp className="w-6 h-6 text-primary" />
             This Week's Mood
           </h2>
-          
+
           <div className="space-y-6">
             {/* Chart */}
             <div className="flex items-end justify-between gap-3 h-48">
@@ -79,7 +154,7 @@ const Insights = () => {
                   <div className="w-full flex items-end justify-center h-full">
                     <div
                       className="w-full bg-gradient-calm rounded-t-lg transition-all duration-500 hover:opacity-80 flex items-end justify-center pb-2"
-                      style={{ height: `${(mood.value / 5) * 100}%` }}
+                      style={{ height: mood.value > 0 ? `${(mood.value / 5) * 100}%` : "10%" }}
                     >
                       <span className="text-2xl">{mood.emoji}</span>
                     </div>
@@ -105,7 +180,7 @@ const Insights = () => {
         {/* Insights Grid */}
         <div className="grid md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-700 delay-150">
           {insights.map((insight, index) => (
-            <Card 
+            <Card
               key={index}
               className="p-6 shadow-soft hover:shadow-card transition-all duration-300 hover:-translate-y-1"
             >
@@ -123,61 +198,6 @@ const Insights = () => {
             </Card>
           ))}
         </div>
-
-        {/* Patterns Section */}
-        <Card className="p-8 mt-8 shadow-card animate-in slide-in-from-bottom-4 duration-700 delay-300 bg-gradient-card">
-          <h2 className="text-2xl font-semibold mb-6">Your Patterns</h2>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="font-semibold mb-4 text-primary">What Helps</h3>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs">✓</span>
-                  </div>
-                  <p className="text-sm">Morning walks increase your mood by 25%</p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs">✓</span>
-                  </div>
-                  <p className="text-sm">Regular sleep schedule shows better mood consistency</p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs">✓</span>
-                  </div>
-                  <p className="text-sm">Completing micro-activities boosts mood effectively</p>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4 text-accent">Areas to Explore</h3>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs">→</span>
-                  </div>
-                  <p className="text-sm">Try evening breathing exercises for better sleep</p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs">→</span>
-                  </div>
-                  <p className="text-sm">Midweek check-ins could help maintain energy</p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs">→</span>
-                  </div>
-                  <p className="text-sm">Consider social activities on lower-mood days</p>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </Card>
       </div>
     </div>
   );

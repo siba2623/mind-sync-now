@@ -32,7 +32,7 @@ const Index = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/dashboard">
+                <Link to="/auth">
                   <Button size="lg" className="gap-2 shadow-soft hover:shadow-glow transition-all duration-300 w-full sm:w-auto">
                     Start Your Journey
                     <ArrowRight className="w-5 h-5" />
@@ -119,7 +119,7 @@ const Index = () => {
               Join thousands of students and professionals using MindSync 
               to build better emotional awareness and resilience.
             </p>
-            <Link to="/dashboard">
+            <Link to="/auth">
               <Button size="lg" variant="secondary" className="gap-2 shadow-soft hover:scale-105 transition-transform duration-300">
                 Get Started Free
                 <ArrowRight className="w-5 h-5" />

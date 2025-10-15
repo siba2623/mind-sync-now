@@ -1,56 +1,128 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Wind, Zap, Music, Heart, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Wind, Zap, Music, Heart, CheckCircle2, LogOut } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { User, Session } from "@supabase/supabase-js";
 
-const activities = [
-  {
-    id: 1,
-    title: "Deep Breathing",
-    duration: "2 min",
-    description: "Calm your nervous system with box breathing technique",
-    icon: Wind,
-    color: "from-blue-400 to-cyan-400",
-    bestFor: "Anxiety, Stress",
-  },
-  {
-    id: 2,
-    title: "Quick Stretch",
-    duration: "3 min",
-    description: "Release physical tension with gentle body movements",
-    icon: Zap,
-    color: "from-green-400 to-emerald-400",
-    bestFor: "Low energy, Tension",
-  },
-  {
-    id: 3,
-    title: "Calming Sounds",
-    duration: "2 min",
-    description: "Listen to nature sounds to ground yourself",
-    icon: Music,
-    color: "from-purple-400 to-pink-400",
-    bestFor: "Overwhelm, Restlessness",
-  },
-  {
-    id: 4,
-    title: "Gratitude Moment",
-    duration: "2 min",
-    description: "Shift perspective by noting three good things",
-    icon: Heart,
-    color: "from-rose-400 to-orange-400",
-    bestFor: "Low mood, Negativity",
-  },
-];
+const iconMap: Record<string, any> = {
+  Wind,
+  Zap,
+  Music,
+  Heart,
+};
+
+interface Activity {
+  id: string;
+  title: string;
+  duration: string;
+  description: string;
+  icon_name: string;
+  color_gradient: string;
+  best_for: string;
+}
 
 const Activities = () => {
-  const [completedActivities, setCompletedActivities] = useState<number[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [completedActivities, setCompletedActivities] = useState<string[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const toggleComplete = (id: number) => {
-    setCompletedActivities((prev) =>
-      prev.includes(id) ? prev.filter((actId) => actId !== id) : [...prev, id]
-    );
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      loadActivities();
+      loadCompletions();
+    }
+  }, [user]);
+
+  const loadActivities = async () => {
+    const { data } = await supabase.from("activities").select("*");
+    if (data) {
+      setActivities(data);
+    }
   };
+
+  const loadCompletions = async () => {
+    if (!user) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { data } = await supabase
+      .from("activity_completions")
+      .select("activity_id")
+      .eq("user_id", user.id)
+      .gte("completed_at", today.toISOString());
+
+    if (data) {
+      setCompletedActivities(data.map((c) => c.activity_id));
+    }
+  };
+
+  const toggleComplete = async (activityId: string) => {
+    if (!user) return;
+
+    const isCompleted = completedActivities.includes(activityId);
+
+    try {
+      if (isCompleted) {
+        const { error } = await supabase
+          .from("activity_completions")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("activity_id", activityId);
+
+        if (error) throw error;
+        setCompletedActivities((prev) => prev.filter((id) => id !== activityId));
+      } else {
+        const { error } = await supabase.from("activity_completions").insert({
+          user_id: user.id,
+          activity_id: activityId,
+        });
+
+        if (error) throw error;
+        setCompletedActivities((prev) => [...prev, activityId]);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update completion",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -61,12 +133,18 @@ const Activities = () => {
             <Link to="/" className="text-2xl font-bold bg-gradient-calm bg-clip-text text-transparent">
               MindSync
             </Link>
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                Back
+            <div className="flex gap-4">
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
+                <LogOut className="w-4 h-4" />
+                Logout
               </Button>
-            </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -81,32 +159,12 @@ const Activities = () => {
           </p>
         </div>
 
-        {/* Personalized Recommendation */}
-        <Card className="p-8 mb-8 shadow-card animate-in slide-in-from-bottom-4 duration-700 bg-gradient-calm">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-              <Zap className="w-8 h-8 text-white" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold text-white mb-2">
-                Recommended for You
-              </h2>
-              <p className="text-white/90 mb-4">
-                Based on your recent mood patterns, try a Quick Stretch to boost your energy
-              </p>
-              <Button variant="secondary" size="sm">
-                Start Activity
-              </Button>
-            </div>
-          </div>
-        </Card>
-
         {/* Activities Grid */}
-        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-700 delay-150">
+        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-700">
           {activities.map((activity, index) => {
             const isCompleted = completedActivities.includes(activity.id);
-            const Icon = activity.icon;
-            
+            const Icon = iconMap[activity.icon_name] || Wind;
+
             return (
               <Card
                 key={activity.id}
@@ -117,7 +175,7 @@ const Activities = () => {
               >
                 <div className="flex flex-col md:flex-row gap-6">
                   <div
-                    className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${activity.color} flex items-center justify-center flex-shrink-0`}
+                    className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${activity.color_gradient} flex items-center justify-center flex-shrink-0`}
                   >
                     <Icon className="w-10 h-10 text-white" />
                   </div>
@@ -134,7 +192,7 @@ const Activities = () => {
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
                           <span className="font-medium">{activity.duration}</span>
                           <span>•</span>
-                          <span>Best for: {activity.bestFor}</span>
+                          <span>Best for: {activity.best_for}</span>
                         </div>
                       </div>
                     </div>
@@ -144,9 +202,6 @@ const Activities = () => {
                     </p>
 
                     <div className="flex gap-3">
-                      <Button size="sm" variant={isCompleted ? "outline" : "default"}>
-                        Start Activity
-                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
