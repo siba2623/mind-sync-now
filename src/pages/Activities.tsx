@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Wind, Zap, Music, Heart, CheckCircle2, LogOut } from "lucide-react";
+import { ArrowLeft, Wind, Zap, Music, Heart, CheckCircle2, LogOut, Cloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { User, Session } from "@supabase/supabase-js";
 import MoodSound from "@/components/MoodSound";
+import { getWeatherData, getWeatherBasedActivitySuggestion, type WeatherData } from "@/services/weather";
 
 const iconMap: Record<string, any> = {
   Wind,
@@ -32,6 +33,8 @@ const Activities = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [currentMood, setCurrentMood] = useState<string>('calm');
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [userCity, setUserCity] = useState<string>('London');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -58,8 +61,14 @@ const Activities = () => {
     if (user) {
       loadActivities();
       loadCompletions();
+      loadWeather();
     }
   }, [user]);
+
+  const loadWeather = async () => {
+    const weather = await getWeatherData(userCity);
+    setWeather(weather);
+  };
 
   const loadActivities = async () => {
     const [activitiesResult, moodResult] = await Promise.all([
@@ -180,6 +189,26 @@ const Activities = () => {
             Quick, science-backed activities to help you feel better right now
           </p>
         </div>
+
+        {/* Weather-Based Suggestion */}
+        {weather && (
+          <Card className="p-6 mb-8 shadow-card bg-gradient-card animate-in fade-in duration-700">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Cloud className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-1">Today's Weather in {userCity}</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {weather.temp}°C • {weather.description}
+                </p>
+                <p className="text-foreground">
+                  {getWeatherBasedActivitySuggestion(weather)}
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Mood-Based Music */}
         <div className="mb-12 animate-in fade-in duration-700">
