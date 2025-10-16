@@ -35,7 +35,7 @@ export const calculateTrend = (moodData: number[]): number => {
 export const checkAchievements = async (userId: string) => {
   try {
     const { data: userData, error } = await supabase
-      .from('users')
+      .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();

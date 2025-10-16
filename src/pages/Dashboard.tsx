@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Sparkles, TrendingUp, Activity, LogOut } from "lucide-react";
+import { Sparkles, TrendingUp, Activity, LogOut, User as UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { User, Session } from "@supabase/supabase-js";
+import MoodSound from "@/components/MoodSound";
 
 const moods = [
   { emoji: "😊", label: "Great", value: 5, color: "from-green-400 to-emerald-400" },
@@ -151,6 +152,12 @@ const Dashboard = () => {
                   Activities
                 </Button>
               </Link>
+              <Link to="/profile">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <UserIcon className="w-4 h-4" />
+                  Profile
+                </Button>
+              </Link>
               <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -258,6 +265,13 @@ const Dashboard = () => {
             <p className="text-sm text-muted-foreground mt-1">Completed</p>
           </Card>
         </div>
+
+        {/* Music Recommendations */}
+        {selectedMood !== null && (
+          <div className="mt-12 animate-in slide-in-from-bottom-4 duration-700 delay-300">
+            <MoodSound currentMood={moods.find(m => m.value === selectedMood)?.label || 'calm'} />
+          </div>
+        )}
       </div>
     </div>
   );
