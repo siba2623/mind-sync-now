@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Sparkles, TrendingUp, Activity, LogOut } from "lucide-react";
+import { Sparkles, TrendingUp, Activity, LogOut, User as UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { User, Session } from "@supabase/supabase-js";
 import MoodSound from "@/components/MoodSound";
@@ -150,6 +150,12 @@ const Dashboard = () => {
                 <Button variant="ghost" size="sm" className="gap-2">
                   <Activity className="w-4 h-4" />
                   Activities
+                </Button>
+              </Link>
+              <Link to="/profile">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <UserIcon className="w-4 h-4" />
+                  Profile
                 </Button>
               </Link>
               <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
