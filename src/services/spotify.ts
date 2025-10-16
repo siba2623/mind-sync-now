@@ -1,22 +1,12 @@
 import { supabase } from '../integrations/supabase/client';
 
-let accessToken: string | null = null;
-let tokenExpiration: number | null = null;
-
-const getSpotifyAccessToken = async () => {
-  // First, try to get the token from Supabase auth session
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.provider_token) {
-    return session.provider_token;
-  }
-
-  // If no session token, use client credentials flow
-  if (!accessToken || (tokenExpiration && Date.now() > tokenExpiration)) {
+const getSpotifyToken = async () => {
+  try {
     const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
     const clientSecret = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      throw new Error('Spotify credentials not configured');
+      throw new Error('Spotify credentials are not properly configured');
     }
 
     const response = await fetch('https://accounts.spotify.com/api/token', {
@@ -28,143 +18,66 @@ const getSpotifyAccessToken = async () => {
       body: 'grant_type=client_credentials'
     });
 
+    if (!response.ok) {
+      throw new Error(`Failed to get Spotify token: ${response.status}`);
+    }
+
     const data = await response.json();
-    if (data.access_token) {
-      accessToken = data.access_token;
-      tokenExpiration = Date.now() + (data.expires_in * 1000);
-      return accessToken;
-    }
-  }
-
-  return accessToken;
-};
-
-export const fetchWebApi = async (endpoint: string, method: string, body?: any) => {
-  try {
-    const token = await getSpotifyAccessToken();
-    if (!token) {
-      throw new Error('No Spotify token available');
-    }
-
-    const res = await fetch(`https://api.spotify.com/${endpoint}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      method,
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(`Spotify API error: ${errorData.error?.message || res.statusText}`);
-    }
-    
-    return await res.json();
+    return data.access_token;
   } catch (error) {
-    console.error('Error fetching from Spotify API:', error);
+    console.error('Error in getSpotifyToken:', error);
     throw error;
-  }
-};
-
-export const getTopTracks = async () => {
-  try {
-    const response = await fetchWebApi(
-      'v1/me/top/tracks?time_range=long_term&limit=5',
-      'GET'
-    );
-    return response.items;
-  } catch (error) {
-    console.error('Error fetching top tracks:', error);
-    return [];
   }
 };
 
 export const getMoodBasedRecommendations = async (mood: string) => {
   try {
-    // Map moods to Spotify audio features and seed genres
-    const moodMappings: Record<string, { features: Record<string, number>; genres: string[] }> = {
-      happy: {
-        features: {
-          min_valence: 0.7,
-          target_energy: 0.8,
-          target_danceability: 0.7
-        },
-        genres: ['pop', 'happy', 'dance']
-      },
-      sad: {
-        features: {
-          max_valence: 0.3,
-          target_energy: 0.4,
-          target_acousticness: 0.8
-        },
-        genres: ['sad', 'acoustic', 'piano']
-      },
-      calm: {
-        features: {
-          max_energy: 0.4,
-          target_valence: 0.5,
-          min_instrumentalness: 0.5,
-          target_tempo: 100
-        },
-        genres: ['ambient', 'chill', 'sleep']
-      },
-      energetic: {
-        features: {
-          min_energy: 0.7,
-          target_valence: 0.6,
-          target_tempo: 130
-        },
-        genres: ['workout', 'dance', 'electronic']
-      },
-      anxious: {
-        features: {
-          target_energy: 0.3,
-          target_valence: 0.5,
-          target_instrumentalness: 0.7
-        },
-        genres: ['classical', 'ambient', 'meditation']
-      },
-      neutral: {
-        features: {
-          target_energy: 0.5,
-          target_valence: 0.5,
-          target_popularity: 70
-        },
-        genres: ['pop', 'indie', 'alternative']
-      }
+    const token = await getSpotifyToken();
+    
+    const moodToFeatures = {
+      happy: { target_valence: '0.8', target_energy: '0.8', seed_genres: 'pop,happy' },
+      sad: { target_valence: '0.3', target_energy: '0.4', seed_genres: 'acoustic,piano' },
+      calm: { target_energy: '0.3', target_valence: '0.5', seed_genres: 'ambient,classical' },
+      energetic: { target_energy: '0.8', seed_genres: 'dance,electronic' },
+      neutral: { target_energy: '0.5', target_valence: '0.5', seed_genres: 'pop,rock' }
     };
 
-    const moodConfig = moodMappings[mood.toLowerCase()] || moodMappings.calm;
-    const params = new URLSearchParams({
-      ...moodConfig.features,
-      seed_genres: moodConfig.genres.join(','),
-      limit: '9'
+    const features = moodToFeatures[mood.toLowerCase() as keyof typeof moodToFeatures] || moodToFeatures.neutral;
+    const params = new URLSearchParams();
+    Object.entries(features).forEach(([key, value]) => {
+      params.append(key, value.toString());
     });
-    
-    const response = await fetchWebApi(
-      `v1/recommendations?${params.toString()}`,
-      'GET'
-    );
+    params.append('limit', '10');
 
-    // Add audio features to each track
-    const tracks = response.tracks;
-    if (tracks.length > 0) {
-      const trackIds = tracks.map((track: any) => track.id).join(',');
-      const audioFeatures = await fetchWebApi(
-        `v1/audio-features?ids=${trackIds}`,
-        'GET'
-      );
-      
-      return tracks.map((track: any, index: number) => ({
-        ...track,
-        audioFeatures: audioFeatures.audio_features[index]
-      }));
+    const response = await fetch(`https://api.spotify.com/v1/recommendations?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Spotify API error: ${response.status}`);
     }
 
-    return tracks;
+    const data = await response.json();
+    if (!data.tracks) {
+      throw new Error('No recommendations found');
+    }
+
+    return data.tracks.map((track: any) => ({
+      id: track.id,
+      name: track.name,
+      artists: track.artists,
+      preview_url: track.preview_url,
+      external_urls: track.external_urls,
+      album: {
+        name: track.album.name,
+        images: track.album.images
+      }
+    }));
   } catch (error) {
     console.error('Error getting recommendations:', error);
-    return [];
+    throw error;
   }
 };

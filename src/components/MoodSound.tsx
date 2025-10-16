@@ -29,29 +29,38 @@ const MoodSound: React.FC<MoodSoundProps> = ({ currentMood }) => {
   const getMoodBasedSongs = async () => {
     setIsLoading(true);
     setError(null);
+    setTracks([]);
+    
     try {
+      console.log('Starting recommendation request for mood:', currentMood);
       const recommendations = await getMoodBasedRecommendations(currentMood);
+      
       if (!recommendations || recommendations.length === 0) {
         throw new Error('No recommendations found for your current mood');
       }
+
+      console.log('Received recommendations:', recommendations);
       setTracks(recommendations);
       
-      // Show success message
       toast({
         title: "Music Loaded",
         description: `Found ${recommendations.length} tracks matching your ${currentMood} mood`,
       });
     } catch (err: any) {
+      console.error('Error in getMoodBasedSongs:', err);
       const errorMessage = err.message || 'Failed to load recommendations. Please try again.';
       setError(errorMessage);
-      console.error('Error fetching recommendations:', err);
       
-      // Show error toast
       toast({
-        title: "Error",
+        title: "Error Loading Music",
         description: errorMessage,
         variant: "destructive",
       });
+
+      // Show technical error details in console for debugging
+      if (err.stack) {
+        console.error('Error stack:', err.stack);
+      }
     } finally {
       setIsLoading(false);
     }
