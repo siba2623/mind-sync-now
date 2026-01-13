@@ -1,18 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from './ui/button';
-import { Card } from './ui/card';
-import { getTopTracks, getMoodBasedRecommendations } from '../services/spotify';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
 import { useToast } from '../hooks/use-toast';
-
-interface Track {
-  id: string;
-  name: string;
-  artists: { name: string }[];
-  preview_url: string | null;
-  external_urls: {
-    spotify: string;
-  };
-}
+import { musicRecommendationService, type MusicRecommendationResponse } from '../services/musicRecommendations';
+import { Loader2, Music, Youtube, Play, ExternalLink, Headphones, TestTube } from 'lucide-react';
 
 interface MoodSoundProps {
   currentMood: string;
@@ -20,35 +12,55 @@ interface MoodSoundProps {
 
 const MoodSound: React.FC<MoodSoundProps> = ({ currentMood }) => {
   const { toast } = useToast();
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [recommendations, setRecommendations] = useState<MusicRecommendationResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
+
+  const testAPI = async () => {
+    setIsLoading(true);
+    try {
+      const result = await musicRecommendationService.testGeminiConnection();
+      if (result.success) {
+        toast({
+          title: "✅ API Test Successful",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "❌ API Test Failed",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Test Error",
+        description: "Could not test API connection",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getMoodBasedSongs = async () => {
     setIsLoading(true);
     setError(null);
-    setTracks([]);
+    setRecommendations(null);
     
     try {
-      console.log('Starting recommendation request for mood:', currentMood);
-      const recommendations = await getMoodBasedRecommendations(currentMood);
+      console.log('Getting AI music recommendations for mood:', currentMood);
+      const result = await musicRecommendationService.getMoodBasedRecommendations(currentMood);
       
-      if (!recommendations || recommendations.length === 0) {
-        throw new Error('No recommendations found for your current mood');
-      }
-
-      console.log('Received recommendations:', recommendations);
-      setTracks(recommendations);
+      setRecommendations(result);
       
       toast({
-        title: "Music Loaded",
-        description: `Found ${recommendations.length} tracks matching your ${currentMood} mood`,
+        title: "Music Recommendations Ready! 🎵",
+        description: `Found ${result.recommendations.length} personalized songs for your ${currentMood} mood`,
       });
     } catch (err: any) {
-      console.error('Error in getMoodBasedSongs:', err);
-      const errorMessage = err.message || 'Failed to load recommendations. Please try again.';
+      console.error('Error getting music recommendations:', err);
+      const errorMessage = err.message || 'Failed to get recommendations. Please try again.';
       setError(errorMessage);
       
       toast({
@@ -56,34 +68,17 @@ const MoodSound: React.FC<MoodSoundProps> = ({ currentMood }) => {
         description: errorMessage,
         variant: "destructive",
       });
-
-      // Show technical error details in console for debugging
-      if (err.stack) {
-        console.error('Error stack:', err.stack);
-      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const playPreview = (track: Track) => {
-    if (audio) {
-      audio.pause();
-    }
-    if (track.preview_url) {
-      const newAudio = new Audio(track.preview_url);
-      newAudio.play();
-      setAudio(newAudio);
-      setCurrentlyPlaying(track.id);
-    }
-  };
-
-  const stopPreview = () => {
-    if (audio) {
-      audio.pause();
-      setAudio(null);
-      setCurrentlyPlaying(null);
-    }
+  const handlePlatformClick = (url: string, platform: string) => {
+    window.open(url, '_blank');
+    toast({
+      title: `Opening ${platform}`,
+      description: 'Redirecting to music platform...',
+    });
   };
 
   const getMoodEmoji = (mood: string) => {
@@ -93,68 +88,174 @@ const MoodSound: React.FC<MoodSoundProps> = ({ currentMood }) => {
       calm: '😌',
       energetic: '⚡',
       anxious: '😰',
-      neutral: '😐'
+      neutral: '😐',
+      excited: '🤩',
+      relaxed: '😌',
+      stressed: '😤',
+      peaceful: '🕊️'
     };
     return moodEmojis[mood.toLowerCase()] || '🎵';
   };
 
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Creating Your Personal Playlist</h3>
+          <p className="text-muted-foreground text-center">
+            Our AI is analyzing your {currentMood} mood and finding the perfect songs...
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">
-          {getMoodEmoji(currentMood)} Music for your {currentMood} Mood
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          {getMoodEmoji(currentMood)} Music for Your {currentMood} Mood
         </h2>
-        <Button
-          onClick={getMoodBasedSongs}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Loading...' : 'Get Recommendations'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={testAPI}
+            disabled={isLoading}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <TestTube className="w-4 h-4" />
+            Test API
+          </Button>
+          <Button
+            onClick={getMoodBasedSongs}
+            disabled={isLoading}
+            className="gap-2"
+          >
+            <Headphones className="w-4 h-4" />
+            {recommendations ? 'Get New Recommendations' : 'Get AI Recommendations'}
+          </Button>
+        </div>
       </div>
 
+      {/* Error State */}
       {error && (
-        <div className="text-red-500 p-4 rounded-md bg-red-50">
-          {error}
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <div className="text-destructive">
+              <h3 className="font-semibold mb-2">Unable to Load Music</h3>
+              <p>{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recommendations */}
+      {recommendations && (
+        <div className="space-y-6">
+          {/* Mood Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Music className="w-5 h-5 text-primary" />
+                AI Music Therapy Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">Your Mood Analysis</h4>
+                <p className="text-muted-foreground">{recommendations.moodAnalysis}</p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Wellness Advice</h4>
+                <p className="text-muted-foreground">{recommendations.generalAdvice}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Song Recommendations */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold">Recommended Songs</h3>
+              <Badge variant="outline">{recommendations.recommendations.length} songs</Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recommendations.recommendations.map((song, index) => (
+                <Card key={index} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg leading-tight">{song.title}</CardTitle>
+                        <CardDescription className="text-base font-medium text-foreground/80">
+                          {song.artist}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="secondary" className="ml-2">
+                        {song.genre}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">{song.reason}</p>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handlePlatformClick(song.youtubeSearchUrl, 'YouTube')}
+                        className="gap-2 bg-red-600 hover:bg-red-700"
+                      >
+                        <Youtube className="w-4 h-4" />
+                        YouTube
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePlatformClick(song.spotifySearchUrl!, 'Spotify')}
+                        className="gap-2"
+                      >
+                        <Play className="w-4 h-4" />
+                        Spotify
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePlatformClick(song.appleMusicSearchUrl!, 'Apple Music')}
+                        className="gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Apple
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {tracks.map((track) => (
-          <Card key={track.id} className="p-4 hover:shadow-lg transition-shadow">
-            <h3 className="font-semibold mb-2">{track.name}</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              {track.artists.map(artist => artist.name).join(', ')}
-            </p>
-            <div className="flex space-x-2">
-              {track.preview_url ? (
-                <Button
-                  variant={currentlyPlaying === track.id ? "destructive" : "default"}
-                  size="sm"
-                  onClick={() => currentlyPlaying === track.id ? stopPreview() : playPreview(track)}
-                >
-                  {currentlyPlaying === track.id ? 'Stop' : 'Preview'}
-                </Button>
-              ) : (
-                <Button variant="secondary" size="sm" disabled>
-                  No preview available
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(track.external_urls.spotify, '_blank')}
-              >
-                Open in Spotify
-              </Button>
+      {/* Empty State */}
+      {!recommendations && !isLoading && !error && (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Music className="w-8 h-8 text-primary" />
             </div>
-          </Card>
-        ))}
-      </div>
-
-      {tracks.length === 0 && !isLoading && (
-        <div className="text-center p-8 text-gray-500">
-          Click 'Get Recommendations' to discover music that matches your mood
-        </div>
+            <h3 className="text-lg font-semibold mb-2">Ready for Some Music Therapy?</h3>
+            <p className="text-muted-foreground mb-4">
+              Get AI-powered music recommendations tailored to your {currentMood} mood
+            </p>
+            <Button onClick={getMoodBasedSongs} className="gap-2">
+              <Headphones className="w-4 h-4" />
+              Discover Music for Your Mood
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

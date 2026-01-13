@@ -64,10 +64,10 @@ This project requires several API keys to function properly. Follow these steps:
      - Create a new API key
      - Copy the API key
 
-   - **Spotify API** (Optional - for music integration):
-     - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-     - Create a new app
-     - Copy Client ID and Client Secret
+   - **Music Recommendations** (Powered by Gemini AI):
+     - No additional setup needed! 🎵
+     - Uses your existing VITE_GEMINI_API_KEY
+     - Provides personalized music suggestions with links to YouTube, Spotify, and Apple Music
 
    - **OpenWeather API** (Optional - for weather insights):
      - Sign up at [OpenWeatherMap](https://openweathermap.org/api)

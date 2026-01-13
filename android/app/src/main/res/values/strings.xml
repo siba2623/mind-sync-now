@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MindSync</string>
+    <string name="title_activity_main">MindSync</string>
+    <string name="package_name">com.mindsync.app</string>
+    <string name="custom_url_scheme">com.mindsync.app</string>
+</resources>

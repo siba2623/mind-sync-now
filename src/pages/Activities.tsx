@@ -1,40 +1,141 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Wind, Zap, Music, Heart, CheckCircle2, LogOut, Cloud } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Wind, 
+  Brain, 
+  Heart, 
+  Calendar,
+  BookOpen,
+  Shield,
+  Moon,
+  Target,
+  LogOut,
+  Play,
+  Clock,
+  Sparkles
+} from "lucide-react";
+import IconWrapper from "@/components/ui/icon-wrapper";
 import { useToast } from "@/hooks/use-toast";
 import type { User, Session } from "@supabase/supabase-js";
-import MoodSound from "@/components/MoodSound";
-import { getWeatherData, getWeatherBasedActivitySuggestion, type WeatherData } from "@/services/weather";
+import DailyCheckin from "@/components/DailyCheckin";
+import BreathingExercise from "@/components/BreathingExercise";
+import MeditationTimer from "@/components/MeditationTimer";
+import CrisisSupport from "@/components/CrisisSupport";
 
-const iconMap: Record<string, any> = {
-  Wind,
-  Zap,
-  Music,
-  Heart,
-};
-
-interface Activity {
+interface WellnessActivity {
   id: string;
   title: string;
-  duration: string;
   description: string;
-  icon_name: string;
-  color_gradient: string;
-  best_for: string;
+  duration: string;
+  category: string;
+  icon: any;
+  color: string;
+  benefits: string[];
+  component?: string;
 }
 
+const wellnessActivities: WellnessActivity[] = [
+  {
+    id: 'daily-checkin',
+    title: 'Daily Check-in',
+    description: 'Comprehensive mood and wellness assessment to track your emotional state',
+    duration: '5-10 minutes',
+    category: 'Assessment',
+    icon: Calendar,
+    color: 'bg-blue-500',
+    benefits: ['Self-awareness', 'Mood tracking', 'Pattern recognition'],
+    component: 'checkin'
+  },
+  {
+    id: 'breathing-exercise',
+    title: 'Breathing Exercises',
+    description: 'Guided breathing patterns to reduce stress and promote relaxation',
+    duration: '3-15 minutes',
+    category: 'Mindfulness',
+    icon: Wind,
+    color: 'bg-green-500',
+    benefits: ['Stress reduction', 'Anxiety relief', 'Better focus'],
+    component: 'breathing'
+  },
+  {
+    id: 'meditation-timer',
+    title: 'Meditation Timer',
+    description: 'Guided meditation sessions with various techniques and ambient sounds',
+    duration: '5-60 minutes',
+    category: 'Mindfulness',
+    icon: Brain,
+    color: 'bg-purple-500',
+    benefits: ['Mental clarity', 'Emotional balance', 'Inner peace'],
+    component: 'meditation'
+  },
+  {
+    id: 'crisis-support',
+    title: 'Crisis Support',
+    description: 'Immediate access to mental health crisis resources and helplines',
+    duration: 'As needed',
+    category: 'Support',
+    icon: Shield,
+    color: 'bg-red-500',
+    benefits: ['Immediate help', 'Professional support', 'Safety resources'],
+    component: 'crisis'
+  },
+  {
+    id: 'sleep-tracker',
+    title: 'Sleep Tracking',
+    description: 'Monitor your sleep patterns and quality for better rest',
+    duration: '2-3 minutes',
+    category: 'Health',
+    icon: Moon,
+    color: 'bg-indigo-500',
+    benefits: ['Better sleep', 'Health insights', 'Recovery tracking']
+  },
+  {
+    id: 'journal',
+    title: 'Wellness Journal',
+    description: 'Express your thoughts and feelings through guided journaling',
+    duration: '10-20 minutes',
+    category: 'Reflection',
+    icon: BookOpen,
+    color: 'bg-orange-500',
+    benefits: ['Emotional processing', 'Self-reflection', 'Stress relief']
+  },
+  {
+    id: 'goals',
+    title: 'Wellness Goals',
+    description: 'Set and track personal wellness and mental health goals',
+    duration: '5-15 minutes',
+    category: 'Growth',
+    icon: Target,
+    color: 'bg-pink-500',
+    benefits: ['Motivation', 'Progress tracking', 'Personal growth']
+  },
+  {
+    id: 'gratitude',
+    title: 'Gratitude Practice',
+    description: 'Daily gratitude exercises to improve mood and perspective',
+    duration: '3-5 minutes',
+    category: 'Positivity',
+    icon: Heart,
+    color: 'bg-rose-500',
+    benefits: ['Positive mindset', 'Improved mood', 'Life satisfaction']
+  }
+];
+
 const Activities = () => {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [completedActivities, setCompletedActivities] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [currentMood, setCurrentMood] = useState<string>('calm');
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [userCity, setUserCity] = useState<string>('London');
+  const [activeView, setActiveView] = useState<string>('overview');
+  const [stats, setStats] = useState({
+    completedToday: 0,
+    weeklyStreak: 0,
+    totalSessions: 0
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -59,90 +160,46 @@ const Activities = () => {
 
   useEffect(() => {
     if (user) {
-      loadActivities();
-      loadCompletions();
-      loadWeather();
+      loadStats();
     }
   }, [user]);
 
-  const loadWeather = async () => {
-    const weather = await getWeatherData(userCity);
-    setWeather(weather);
-  };
-
-  const loadActivities = async () => {
-    const [activitiesResult, moodResult] = await Promise.all([
-      supabase.from("activities").select("*"),
-      supabase
-        .from("mood_entries")
-        .select("mood_value")
-        .order("created_at", { ascending: false })
-        .limit(1)
-    ]);
-
-    if (activitiesResult.data) {
-      setActivities(activitiesResult.data);
-    }
-
-    if (moodResult.data?.[0]) {
-      // Convert mood value (1-5) to descriptive mood
-      const moodMap = {
-        1: 'sad',
-        2: 'anxious',
-        3: 'neutral',
-        4: 'calm',
-        5: 'happy'
-      };
-      setCurrentMood(moodMap[moodResult.data[0].mood_value as keyof typeof moodMap] || 'calm');
-    }
-  };
-
-  const loadCompletions = async () => {
+  const loadStats = async () => {
     if (!user) return;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const { data } = await supabase
-      .from("activity_completions")
-      .select("activity_id")
-      .eq("user_id", user.id)
-      .gte("completed_at", today.toISOString());
-
-    if (data) {
-      setCompletedActivities(data.map((c) => c.activity_id));
-    }
-  };
-
-  const toggleComplete = async (activityId: string) => {
-    if (!user) return;
-
-    const isCompleted = completedActivities.includes(activityId);
 
     try {
-      if (isCompleted) {
-        const { error } = await supabase
-          .from("activity_completions")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("activity_id", activityId);
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Count today's activities
+      const [checkinData, breathingData, meditationData] = await Promise.all([
+        supabase
+          .from('daily_checkins')
+          .select('id')
+          .eq('user_id', user.id)
+          .gte('created_at', today),
+        supabase
+          .from('breathing_sessions')
+          .select('id')
+          .eq('user_id', user.id)
+          .gte('created_at', today),
+        supabase
+          .from('meditation_sessions')
+          .select('id')
+          .eq('user_id', user.id)
+          .gte('created_at', today)
+      ]);
 
-        if (error) throw error;
-        setCompletedActivities((prev) => prev.filter((id) => id !== activityId));
-      } else {
-        const { error } = await supabase.from("activity_completions").insert({
-          user_id: user.id,
-          activity_id: activityId,
-        });
+      const completedToday = (checkinData.data?.length || 0) + 
+                            (breathingData.data?.length || 0) + 
+                            (meditationData.data?.length || 0);
 
-        if (error) throw error;
-        setCompletedActivities((prev) => [...prev, activityId]);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update completion",
-        variant: "destructive",
+      setStats({
+        completedToday,
+        weeklyStreak: 7, // Placeholder
+        totalSessions: completedToday * 5 // Placeholder
       });
+    } catch (error) {
+      console.error('Error loading stats:', error);
     }
   };
 
@@ -151,28 +208,43 @@ const Activities = () => {
     navigate("/");
   };
 
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'checkin':
+        return <DailyCheckin onComplete={() => setActiveView('overview')} />;
+      case 'breathing':
+        return <BreathingExercise />;
+      case 'meditation':
+        return <MeditationTimer />;
+      case 'crisis':
+        return <CrisisSupport />;
+      default:
+        return null;
+    }
+  };
+
   if (!user) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-subtle mobile-page">
       {/* Navigation */}
-      <nav className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-10">
+      <nav className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-10 safe-area-top">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="text-2xl font-bold bg-gradient-calm bg-clip-text text-transparent">
               MindSync
             </Link>
-            <div className="flex gap-4">
+            <div className="hidden md:flex gap-4">
               <Link to="/dashboard">
                 <Button variant="ghost" size="sm" className="gap-2">
-                  <ArrowLeft className="w-4 h-4" />
-                  Back
+                  <IconWrapper icon={ArrowLeft} variant="minimal" size="sm" color="primary" />
+                  Dashboard
                 </Button>
               </Link>
               <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
-                <LogOut className="w-4 h-4" />
+                <IconWrapper icon={LogOut} variant="minimal" size="sm" color="danger" />
                 Logout
               </Button>
             </div>
@@ -180,110 +252,176 @@ const Activities = () => {
         </div>
       </nav>
 
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
-        <div className="mb-12 animate-in fade-in duration-700">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
-            Micro-Activities
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Quick, science-backed activities to help you feel better right now
-          </p>
-        </div>
-
-        {/* Weather-Based Suggestion */}
-        {weather && (
-          <Card className="p-6 mb-8 shadow-card bg-gradient-card animate-in fade-in duration-700">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Cloud className="w-6 h-6 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg mb-1">Today's Weather in {userCity}</h3>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {weather.temp}°C • {weather.description}
-                </p>
-                <p className="text-foreground">
-                  {getWeatherBasedActivitySuggestion(weather)}
-                </p>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Mood-Based Music */}
-        <div className="mb-12 animate-in fade-in duration-700">
-          <MoodSound currentMood={currentMood} />
-        </div>
-
-        {/* Activities Grid */}
-        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-700">
-          {activities.map((activity, index) => {
-            const isCompleted = completedActivities.includes(activity.id);
-            const Icon = iconMap[activity.icon_name] || Wind;
-
-            return (
-              <Card
-                key={activity.id}
-                className={`p-6 shadow-soft hover:shadow-card transition-all duration-300 hover:-translate-y-1 ${
-                  isCompleted ? "border-2 border-primary bg-primary/5" : ""
-                }`}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div
-                    className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${activity.color_gradient} flex items-center justify-center flex-shrink-0`}
-                  >
-                    <Icon className="w-10 h-10 text-white" />
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div>
-                        <h3 className="text-xl font-semibold mb-1 flex items-center gap-2">
-                          {activity.title}
-                          {isCompleted && (
-                            <CheckCircle2 className="w-5 h-5 text-primary" />
-                          )}
-                        </h3>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span className="font-medium">{activity.duration}</span>
-                          <span>•</span>
-                          <span>Best for: {activity.best_for}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-muted-foreground mb-4 leading-relaxed">
-                      {activity.description}
-                    </p>
-
-                    <div className="flex gap-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => toggleComplete(activity.id)}
-                      >
-                        {isCompleted ? "Mark Incomplete" : "Mark Complete"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Progress Summary */}
-        {completedActivities.length > 0 && (
-          <Card className="p-6 mt-8 shadow-card animate-in fade-in duration-500 bg-gradient-card">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold mb-2">Great Work!</h3>
-              <p className="text-muted-foreground">
-                You've completed {completedActivities.length} activit
-                {completedActivities.length === 1 ? "y" : "ies"} today
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {activeView === 'overview' ? (
+          <>
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold mb-4">Wellness Activities</h1>
+              <p className="text-lg text-muted-foreground">
+                Comprehensive tools for your mental health and wellbeing journey
               </p>
             </div>
-          </Card>
+
+            {/* Stats Overview */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="mx-auto mb-3">
+                    <IconWrapper icon={Sparkles} variant="soft" size="lg" color="primary" />
+                  </div>
+                  <div className="text-2xl font-bold text-primary mb-1">{stats.completedToday}</div>
+                  <div className="text-sm text-muted-foreground">Activities Today</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="mx-auto mb-3">
+                    <IconWrapper icon={Target} variant="soft" size="lg" color="success" />
+                  </div>
+                  <div className="text-2xl font-bold text-green-500 mb-1">{stats.weeklyStreak}</div>
+                  <div className="text-sm text-muted-foreground">Day Streak</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="mx-auto mb-3">
+                    <IconWrapper icon={Clock} variant="soft" size="lg" color="info" />
+                  </div>
+                  <div className="text-2xl font-bold text-blue-500 mb-1">{stats.totalSessions}</div>
+                  <div className="text-sm text-muted-foreground">Total Sessions</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Activities Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {wellnessActivities.map((activity) => {
+                const Icon = activity.icon;
+                return (
+                  <Card 
+                    key={activity.id} 
+                    className="hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                    onClick={() => activity.component && setActiveView(activity.component)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-center gap-3 mb-2">
+                        <IconWrapper 
+                          icon={Icon} 
+                          variant="default" 
+                          size="md" 
+                          color={activity.id === 'daily-checkin' ? 'info' : 
+                                 activity.id === 'breathing' ? 'success' : 
+                                 activity.id === 'meditation' ? 'secondary' : 
+                                 activity.id === 'crisis' ? 'danger' : 'primary'} 
+                        />
+                        <div>
+                          <CardTitle className="text-lg">{activity.title}</CardTitle>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {activity.category}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {activity.duration}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="mb-4">
+                        {activity.description}
+                      </CardDescription>
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">Benefits:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {activity.benefits.map((benefit, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {benefit}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      {activity.component && (
+                        <Button 
+                          className="w-full mt-4 gap-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveView(activity.component!);
+                          }}
+                        >
+                          <IconWrapper icon={Play} variant="minimal" size="sm" color="primary" />
+                          Start Activity
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Quick Access */}
+            <Card className="mt-8">
+              <CardHeader>
+                <CardTitle>Quick Access</CardTitle>
+                <CardDescription>
+                  Jump into your most-used wellness activities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-4 gap-4">
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 h-auto p-4 flex-col"
+                    onClick={() => setActiveView('checkin')}
+                  >
+                    <IconWrapper icon={Calendar} variant="soft" size="lg" color="info" />
+                    <span>Daily Check-in</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 h-auto p-4 flex-col"
+                    onClick={() => setActiveView('breathing')}
+                  >
+                    <IconWrapper icon={Wind} variant="soft" size="lg" color="success" />
+                    <span>Quick Breathing</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 h-auto p-4 flex-col"
+                    onClick={() => setActiveView('meditation')}
+                  >
+                    <IconWrapper icon={Brain} variant="soft" size="lg" color="secondary" />
+                    <span>5-Min Meditation</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 h-auto p-4 flex-col border-red-200 hover:bg-red-50"
+                    onClick={() => setActiveView('crisis')}
+                  >
+                    <Shield className="w-6 h-6 text-red-500" />
+                    <span>Crisis Support</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <div>
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={() => setActiveView('overview')}>
+                ← Back to Activities
+              </Button>
+            </div>
+            {renderActiveView()}
+          </div>
         )}
       </div>
     </div>
