@@ -1,18 +1,9 @@
-import React, { useState, memo } from "react";
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  Container, 
-  useTheme,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  Avatar,
-  Stack,
-  IconButton
-} from "@mui/material";
+import { useState, memo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   LineChart,
   Line,
@@ -26,15 +17,16 @@ import {
   Pie,
   Cell
 } from "recharts";
-import { 
-  Psychology, 
-  SentimentSatisfied, 
-  Mood, 
-  Insights as InsightsIcon,
+import {
+  Brain,
+  Smile,
+  Heart,
+  BarChart3,
   TrendingUp,
-  Chat,
-  Close
-} from "@mui/icons-material";
+  MessageCircle,
+  X,
+  ArrowLeft
+} from "lucide-react";
 import Chatbot from "../components/Chatbot";
 
 // Move data to separate constants
@@ -63,358 +55,269 @@ const WEEKLY_STATS = [
 ];
 
 // Memoize the MoodCard component
-const MoodCard = memo(({ icon, title, value, subtitle, color }) => (
-  <Card sx={{ 
-    background: `linear-gradient(135deg, ${color}20, ${color}40)`,
-    border: `1px solid ${color}30`,
-    borderRadius: 3,
-    p: 2,
-    height: '100%'
-  }}>
-    <CardContent sx={{ textAlign: 'center' }}>
-      <Avatar sx={{ bgcolor: `${color}20`, color: color, mb: 2, mx: 'auto' }}>
-        {icon}
+const MoodCard = memo(({ icon, title, value, subtitle }) => (
+  <Card className="h-full">
+    <CardContent className="text-center p-6">
+      <Avatar className="mx-auto mb-4 w-12 h-12">
+        <AvatarFallback className="bg-primary/10 text-primary">
+          {icon}
+        </AvatarFallback>
       </Avatar>
-      <Typography variant="h5" fontWeight="bold" color={color}>
+      <div className="text-2xl font-bold text-primary mb-1">
         {value}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" fontWeight="medium">
+      </div>
+      <div className="text-sm font-medium text-foreground mb-1">
         {title}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
+      </div>
+      <div className="text-xs text-muted-foreground">
         {subtitle}
-      </Typography>
+      </div>
     </CardContent>
   </Card>
 ));
 
 // Memoize the WeeklyStatCard component
-const WeeklyStatCard = memo(({ stat, theme }) => (
-  <Card variant="outlined" sx={{ p: 2, textAlign: 'center', borderRadius: 2 }}>
-    <Typography variant="body2" color="text.secondary" gutterBottom>
+const WeeklyStatCard = memo(({ stat }) => (
+  <Card className="p-4 text-center">
+    <div className="text-sm text-muted-foreground mb-2">
       {stat.label}
-    </Typography>
-    <Typography variant="h6" fontWeight="bold" color="primary.main">
+    </div>
+    <div className="text-lg font-bold text-primary mb-2">
       {stat.value}
-    </Typography>
+    </div>
     {stat.trend && (
-      <Chip 
-        label={stat.trend} 
-        size="small" 
-        color="success"
-        variant="outlined"
-        sx={{ mt: 1 }}
-      />
+      <Badge variant="outline" className="text-green-600 border-green-600">
+        {stat.trend}
+      </Badge>
     )}
     {stat.score && (
-      <Box sx={{ mt: 1 }}>
+      <div className="mt-2 flex justify-center gap-1">
         {[...Array(10)].map((_, i) => (
-          <Box
+          <div
             key={i}
-            component="span"
-            sx={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              bgcolor: i < stat.score ? theme.palette.primary.main : 'grey.200',
-              display: 'inline-block',
-              mx: 0.2
-            }}
+            className={`w-1.5 h-1.5 rounded-full ${i < stat.score ? 'bg-primary' : 'bg-gray-200'
+              }`}
           />
         ))}
-      </Box>
+      </div>
     )}
   </Card>
 ));
 
 function Insights() {
   const [showChatbot, setShowChatbot] = useState(false);
-  const theme = useTheme();
+  const navigate = useNavigate();
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header Section */}
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="h3"
-          gutterBottom
-          sx={{
-            color: theme.palette.primary.main,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2
-          }}
-        >
-          <InsightsIcon sx={{ fontSize: 40 }} />
-          Mental Health Insights
-        </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+        </div>
+        <div className="flex items-center gap-3 mb-4">
+          <BarChart3 className="w-10 h-10 text-primary" />
+          <h1 className="text-4xl font-bold text-primary">
+            Mental Health Insights
+          </h1>
+        </div>
+        <p className="text-lg text-muted-foreground">
           Track your emotional well-being and discover patterns in your mental health journey
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
-      <Grid container spacing={3}>
+      <div className="space-y-6">
         {/* Quick Stats */}
-        <Grid item xs={12}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <MoodCard
-                icon={<SentimentSatisfied />}
-                title="Current Mood"
-                value="7.5"
-                subtitle="Stable"
-                color={theme.palette.primary.main}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <MoodCard
-                icon={<TrendingUp />}
-                title="Weekly Trend"
-                value="+12%"
-                subtitle="Improving"
-                color="#4CAF50"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <MoodCard
-                icon={<Psychology />}
-                title="Stress Level"
-                value="Moderate"
-                subtitle="Manageable"
-                color="#FF9800"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <MoodCard
-                icon={<Mood />}
-                title="Sleep Quality"
-                value="8.2"
-                subtitle="Good"
-                color="#9C27B0"
-              />
-            </Grid>
-          </Grid>
-        </Grid>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <MoodCard
+            icon={<Smile />}
+            title="Current Mood"
+            value="7.5"
+            subtitle="Stable"
+          />
+          <MoodCard
+            icon={<TrendingUp />}
+            title="Weekly Trend"
+            value="+12%"
+            subtitle="Improving"
+          />
+          <MoodCard
+            icon={<Brain />}
+            title="Stress Level"
+            value="Moderate"
+            subtitle="Manageable"
+          />
+          <MoodCard
+            icon={<Heart />}
+            title="Sleep Quality"
+            value="8.2"
+            subtitle="Good"
+          />
+        </div>
 
         {/* Main Chart */}
-        <Grid item xs={12} md={8}>
-          <Paper
-            elevation={2}
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              background: "rgba(255, 255, 255, 0.95)",
-              backdropFilter: "blur(10px)",
-              border: `1px solid ${theme.palette.primary.light}20`,
-              height: '100%'
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h5" fontWeight="600" color="primary.main">
-                Weekly Mood & Stress Tracking
-              </Typography>
-              <Chip 
-                label="Last 7 Days" 
-                variant="outlined" 
-                color="primary"
-                size="small"
-              />
-            </Box>
-            
-            <Box sx={{ height: 400, width: "100%" }}>
-              <ResponsiveContainer>
-                <LineChart data={MOOD_DATA}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
-                  <XAxis dataKey="name" stroke="#666" />
-                  <YAxis stroke="#666" />
-                  <Tooltip
-                    contentStyle={{
-                      background: "rgba(255,255,255,0.98)",
-                      border: `1px solid ${theme.palette.primary.light}30`,
-                      borderRadius: "12px",
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="mood"
-                    name="Mood Level"
-                    stroke={theme.palette.primary.main}
-                    strokeWidth={3}
-                    dot={{ fill: theme.palette.primary.main, strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="stress"
-                    name="Stress Level"
-                    stroke="#FF6B6B"
-                    strokeWidth={3}
-                    dot={{ fill: "#FF6B6B", strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Grid>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card className="h-full">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-xl font-semibold text-primary">
+                    Weekly Mood & Stress Tracking
+                  </CardTitle>
+                  <Badge variant="outline">Last 7 Days</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-96 w-full">
+                  <ResponsiveContainer>
+                    <LineChart data={MOOD_DATA}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+                      <XAxis dataKey="name" stroke="#666" />
+                      <YAxis stroke="#666" />
+                      <Tooltip
+                        contentStyle={{
+                          background: "rgba(255,255,255,0.98)",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                        }}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="mood"
+                        name="Mood Level"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={3}
+                        dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 6 }}
+                        activeDot={{ r: 8 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="stress"
+                        name="Stress Level"
+                        stroke="#FF6B6B"
+                        strokeWidth={3}
+                        dot={{ fill: "#FF6B6B", strokeWidth: 2, r: 6 }}
+                        activeDot={{ r: 8 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Sidebar - Activity Distribution */}
-        <Grid item xs={12} md={4}>
-          <Paper
-            elevation={2}
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              background: "rgba(255, 255, 255, 0.95)",
-              backdropFilter: "blur(10px)",
-              border: `1px solid ${theme.palette.primary.light}20`,
-              height: '100%'
-            }}
-          >
-            <Typography variant="h6" fontWeight="600" color="primary.main" gutterBottom>
-              Wellness Activities
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Time distribution across wellness activities
-            </Typography>
-            
-            <Box sx={{ height: 300, display: 'flex', justifyContent: 'center' }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={ACTIVITY_DATA}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {ACTIVITY_DATA.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Grid>
+          {/* Sidebar - Activity Distribution */}
+          <div>
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-primary">
+                  Wellness Activities
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Time distribution across wellness activities
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="h-72 flex justify-center">
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={ACTIVITY_DATA}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {ACTIVITY_DATA.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* Weekly Insights */}
-        <Grid item xs={12}>
-          <Paper
-            elevation={2}
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              background: "rgba(255, 255, 255, 0.95)",
-              backdropFilter: "blur(10px)",
-              border: `1px solid ${theme.palette.primary.light}20`,
-            }}
-          >
-            <Typography variant="h6" fontWeight="600" color="primary.main" gutterBottom>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-primary">
               Weekly Insights
-            </Typography>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {WEEKLY_STATS.map((stat, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <WeeklyStatCard stat={stat} theme={theme} />
-                </Grid>
+                <WeeklyStatCard key={index} stat={stat} />
               ))}
-            </Grid>
-          </Paper>
-        </Grid>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Chatbot Section */}
-        <Grid item xs={12}>
-          {!showChatbot ? (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main}10, ${theme.palette.primary.main}20)`,
-              borderRadius: 3,
-              p: 4,
-              border: `2px dashed ${theme.palette.primary.main}30`
-            }}>
-              <Stack alignItems="center" spacing={2}>
-                <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 60, height: 60 }}>
-                  <Chat sx={{ fontSize: 30 }} />
-                </Avatar>
-                <Typography variant="h6" color="primary.main" fontWeight="600">
-                  Need someone to talk to?
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Our AI assistant is here to listen and provide support
-                </Typography>
-                <button
-                  onClick={() => setShowChatbot(true)}
-                  style={{
-                    padding: "14px 40px",
-                    fontSize: "1.1rem",
-                    background: theme.palette.primary.main,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 12,
-                    cursor: "pointer",
-                    boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
-                    transition: "all 0.3s ease",
-                    fontWeight: 600,
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.transform = "translateY(-2px)";
-                    e.target.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.transform = "translateY(0)";
-                    e.target.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
-                  }}
-                >
-                  Chat with MindSync
-                </button>
-              </Stack>
-            </Box>
-          ) : (
-            <Paper
-              elevation={3}
-              sx={{
-                borderRadius: 3,
-                background: "rgba(255, 255, 255, 0.95)",
-                backdropFilter: "blur(10px)",
-                border: `1px solid ${theme.palette.primary.light}20`,
-                overflow: 'hidden'
-              }}
-            >
-              <Box sx={{ 
-                p: 2, 
-                bgcolor: theme.palette.primary.main, 
-                color: 'white',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <Typography variant="h6" fontWeight="600">
+        {!showChatbot ? (
+          <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+            <CardContent className="flex flex-col items-center text-center p-8">
+              <Avatar className="w-16 h-16 mb-4">
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  <MessageCircle className="w-8 h-8" />
+                </AvatarFallback>
+              </Avatar>
+              <h3 className="text-xl font-semibold text-primary mb-2">
+                Need someone to talk to?
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Our AI assistant is here to listen and provide support
+              </p>
+              <Button
+                onClick={() => setShowChatbot(true)}
+                size="lg"
+                className="shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Chat with MindSync
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-primary text-primary-foreground">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-semibold">
                   MindSync Assistant
-                </Typography>
-                <IconButton 
-                  onClick={() => setShowChatbot(false)} 
-                  sx={{ color: 'white' }}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowChatbot(false)}
+                  className="text-primary-foreground hover:bg-primary-foreground/20"
                 >
-                  <Close />
-                </IconButton>
-              </Box>
-              <Box sx={{ p: 2 }}>
-                <Chatbot />
-              </Box>
-            </Paper>
-          )}
-        </Grid>
-      </Grid>
-    </Container>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4">
+              <Chatbot />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
   );
 }
 

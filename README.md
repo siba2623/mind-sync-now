@@ -1,4 +1,6 @@
-# Welcome to your Lovable project
+# MindSync - Mental Health Wellness App
+
+MindSync helps students and young professionals manage stress and anxiety with personalized mood tracking and science-backed micro-activities.
 
 ## Project info
 
@@ -32,9 +34,55 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Set up environment variables (see Environment Setup below)
+cp .env.example .env
+# Edit .env with your actual API keys
+
+# Step 5: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
+
+## Environment Setup
+
+This project requires several API keys to function properly. Follow these steps:
+
+1. **Copy the environment template:**
+   ```sh
+   cp .env.example .env
+   ```
+
+2. **Get your API keys:**
+
+   - **Supabase** (Required for authentication & database):
+     - Go to [Supabase Dashboard](https://supabase.com/dashboard)
+     - Create a new project or use existing one
+     - Go to Settings > API
+     - Copy the Project URL, Project ID, and anon/public key
+
+   - **Google Gemini AI** (Required for chatbot):
+     - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+     - Create a new API key
+     - Copy the API key
+
+   - **Spotify API** (Optional - for music integration):
+     - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+     - Create a new app
+     - Copy Client ID and Client Secret
+
+   - **OpenWeather API** (Optional - for weather insights):
+     - Sign up at [OpenWeatherMap](https://openweathermap.org/api)
+     - Get your free API key
+
+3. **Update your `.env` file** with the actual values:
+   ```env
+   VITE_SUPABASE_PROJECT_ID="your_actual_project_id"
+   VITE_SUPABASE_PUBLISHABLE_KEY="your_actual_anon_key"
+   VITE_SUPABASE_URL="https://your-project.supabase.co"
+   VITE_GEMINI_API_KEY="your_actual_gemini_key"
+   # ... other keys
+   ```
+
+⚠️ **Important**: Never commit your `.env` file to version control. It's already included in `.gitignore`.
 
 **Edit a file directly in GitHub**
 
