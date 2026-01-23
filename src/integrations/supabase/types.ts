@@ -316,6 +316,246 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_recordings: {
+        Row: {
+          id: string
+          user_id: string
+          audio_url: string
+          duration_seconds: number
+          transcription: string | null
+          sentiment_score: number | null
+          emotion_detected: string | null
+          keywords: string[] | null
+          support_flag: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          audio_url: string
+          duration_seconds: number
+          transcription?: string | null
+          sentiment_score?: number | null
+          emotion_detected?: string | null
+          keywords?: string[] | null
+          support_flag?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          audio_url?: string
+          duration_seconds?: number
+          transcription?: string | null
+          sentiment_score?: number | null
+          emotion_detected?: string | null
+          keywords?: string[] | null
+          support_flag?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      photo_mood_captures: {
+        Row: {
+          id: string
+          user_id: string
+          photo_url: string
+          mood_detected: string | null
+          facial_expression_analysis: Json | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          photo_url: string
+          mood_detected?: string | null
+          facial_expression_analysis?: Json | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          photo_url?: string
+          mood_detected?: string | null
+          facial_expression_analysis?: Json | null
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      health_metrics: {
+        Row: {
+          id: string
+          user_id: string
+          metric_date: string
+          steps_count: number | null
+          heart_rate_avg: number | null
+          heart_rate_resting: number | null
+          blood_pressure_systolic: number | null
+          blood_pressure_diastolic: number | null
+          weight_kg: number | null
+          bmi: number | null
+          calories_burned: number | null
+          active_minutes: number | null
+          vitality_points: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          metric_date: string
+          steps_count?: number | null
+          heart_rate_avg?: number | null
+          heart_rate_resting?: number | null
+          blood_pressure_systolic?: number | null
+          blood_pressure_diastolic?: number | null
+          weight_kg?: number | null
+          bmi?: number | null
+          calories_burned?: number | null
+          active_minutes?: number | null
+          vitality_points?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          metric_date?: string
+          steps_count?: number | null
+          heart_rate_avg?: number | null
+          heart_rate_resting?: number | null
+          blood_pressure_systolic?: number | null
+          blood_pressure_diastolic?: number | null
+          weight_kg?: number | null
+          bmi?: number | null
+          calories_burned?: number | null
+          active_minutes?: number | null
+          vitality_points?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wellness_programs: {
+        Row: {
+          id: string
+          user_id: string
+          program_name: string
+          program_type: string
+          start_date: string
+          end_date: string | null
+          status: string
+          progress_percentage: number
+          goals: Json | null
+          achievements: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          program_name: string
+          program_type: string
+          start_date: string
+          end_date?: string | null
+          status?: string
+          progress_percentage?: number
+          goals?: Json | null
+          achievements?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          program_name?: string
+          program_type?: string
+          start_date?: string
+          end_date?: string | null
+          status?: string
+          progress_percentage?: number
+          goals?: Json | null
+          achievements?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mental_health_assessments: {
+        Row: {
+          id: string
+          user_id: string
+          assessment_type: string
+          score: number
+          severity_level: string | null
+          responses: Json | null
+          recommendations: string[] | null
+          requires_professional_support: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          assessment_type: string
+          score: number
+          severity_level?: string | null
+          responses?: Json | null
+          recommendations?: string[] | null
+          requires_professional_support?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          assessment_type?: string
+          score?: number
+          severity_level?: string | null
+          responses?: Json | null
+          recommendations?: string[] | null
+          requires_professional_support?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      support_interventions: {
+        Row: {
+          id: string
+          user_id: string
+          trigger_source: string
+          trigger_id: string | null
+          intervention_type: string
+          status: string
+          notes: string | null
+          created_at: string
+          resolved_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          trigger_source: string
+          trigger_id?: string | null
+          intervention_type: string
+          status?: string
+          notes?: string | null
+          created_at?: string
+          resolved_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          trigger_source?: string
+          trigger_id?: string | null
+          intervention_type?: string
+          status?: string
+          notes?: string | null
+          created_at?: string
+          resolved_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -11,6 +11,7 @@ import Activities from "./pages/Activities";
 import Profile from "./pages/Profile";
 import Enterprise from "./pages/Enterprise";
 import Wellness from "./pages/Wellness";
+import HealthHub from "./pages/HealthHub";
 import SpotifyCallback from "./pages/SpotifyCallback";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -33,6 +34,7 @@ const AppContent = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/enterprise" element={<Enterprise />} />
         <Route path="/wellness" element={<Wellness />} />
+        <Route path="/health-hub" element={<HealthHub />} />
         <Route path="/callback" element={<SpotifyCallback />} />
         <Route path="/admin" element={<AdminDashboard />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

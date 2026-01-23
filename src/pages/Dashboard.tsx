@@ -280,7 +280,19 @@ const Dashboard = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+              <Link to="/health-hub" className="block">
+                <Card className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-0 shadow-sm bg-gradient-to-br from-red-50 to-pink-50 hover:shadow-red/20 ring-2 ring-red-200">
+                  <CardContent className="p-4 md:p-6 text-center">
+                    <div className="mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                      <IconWrapper icon={Heart} variant="gradient" size="lg" color="danger" />
+                    </div>
+                    <h3 className="font-semibold mb-1 text-gray-900 text-sm">Health Hub</h3>
+                    <p className="text-xs text-gray-600">Discovery</p>
+                  </CardContent>
+                </Card>
+              </Link>
+
               <Card className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-0 shadow-sm ${!hasCheckedInToday ? 'ring-1 ring-primary/30 bg-gradient-to-br from-primary/5 to-primary/10' : 'hover:shadow-primary/10'}`}>
                 <CardContent className="p-4 md:p-6 text-center" onClick={() => setActiveView('checkin')}>
                   <div className="mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">

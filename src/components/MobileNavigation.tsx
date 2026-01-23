@@ -28,10 +28,10 @@ const MobileNavigation = () => {
       color: "primary" as const
     },
     {
-      path: "/wellness",
-      icon: Trophy,
-      label: "Vitality",
-      color: "warning" as const
+      path: "/health-hub",
+      icon: Heart,
+      label: "Health",
+      color: "danger" as const
     },
     {
       path: "/activities",

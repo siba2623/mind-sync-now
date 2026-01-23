@@ -74,12 +74,58 @@ const meditationTypes: MeditationType[] = [
 ];
 
 const ambientSounds = [
-  { name: "Silence", file: null },
-  { name: "Rain", file: "/sounds/rain.mp3" },
-  { name: "Ocean Waves", file: "/sounds/ocean.mp3" },
-  { name: "Forest", file: "/sounds/forest.mp3" },
-  { name: "White Noise", file: "/sounds/whitenoise.mp3" }
+  { name: "Silence", file: null, type: "none" },
+  { name: "Rain", file: null, type: "rain" },
+  { name: "Ocean Waves", file: null, type: "ocean" },
+  { name: "Forest", file: null, type: "forest" },
+  { name: "White Noise", file: null, type: "whitenoise" }
 ];
+
+// Web Audio API for generating ambient sounds
+const createAmbientSound = (type: string): AudioBufferSourceNode | null => {
+  if (type === "none") return null;
+  
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const bufferSize = audioContext.sampleRate * 2; // 2 seconds
+  const buffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate);
+  
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const data = buffer.getChannelData(channel);
+    
+    if (type === "whitenoise") {
+      // White noise
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+    } else if (type === "rain" || type === "ocean" || type === "forest") {
+      // Pink noise (more natural sounding)
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+        b6 = white * 0.115926;
+      }
+    }
+  }
+  
+  const source = audioContext.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  
+  const gainNode = audioContext.createGain();
+  gainNode.gain.value = 0.3;
+  
+  source.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  return source;
+};
 
 const MeditationTimer = () => {
   const [selectedType, setSelectedType] = useState<MeditationType>(meditationTypes[0]);
@@ -91,6 +137,7 @@ const MeditationTimer = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const startTimeRef = useRef<number>(0);
   const { toast } = useToast();
 
@@ -117,6 +164,10 @@ const MeditationTimer = () => {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      if (audioSourceRef.current) {
+        audioSourceRef.current.stop();
+        audioSourceRef.current = null;
+      }
     };
   }, []);
 
@@ -128,13 +179,9 @@ const MeditationTimer = () => {
     if (audioRef.current) {
       audioRef.current.pause();
     }
-
-    // Play completion sound (if enabled)
-    if (soundEnabled) {
-      const completionSound = new Audio('/sounds/bell.mp3');
-      completionSound.play().catch(() => {
-        // Ignore audio play errors
-      });
+    if (audioSourceRef.current) {
+      audioSourceRef.current.stop();
+      audioSourceRef.current = null;
     }
 
     const sessionDuration = duration[0] * 60; // Convert to seconds
@@ -168,30 +215,38 @@ const MeditationTimer = () => {
     setIsCompleted(false);
     startTimeRef.current = Date.now();
 
-    // Start ambient sound
-    if (selectedSound.file && soundEnabled) {
-      audioRef.current = new Audio(selectedSound.file);
-      audioRef.current.loop = true;
-      audioRef.current.volume = 0.3;
-      audioRef.current.play().catch(() => {
-        // Ignore audio play errors
-      });
+    // Start ambient sound using Web Audio API
+    if (selectedSound.type !== "none" && soundEnabled) {
+      try {
+        audioSourceRef.current = createAmbientSound(selectedSound.type);
+        if (audioSourceRef.current) {
+          audioSourceRef.current.start(0);
+        }
+      } catch (error) {
+        console.error('Error starting ambient sound:', error);
+      }
     }
   };
 
   const pauseMeditation = () => {
     setIsActive(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
+    if (audioSourceRef.current) {
+      audioSourceRef.current.stop();
+      audioSourceRef.current = null;
     }
   };
 
   const resumeMeditation = () => {
     setIsActive(true);
-    if (audioRef.current && selectedSound.file && soundEnabled) {
-      audioRef.current.play().catch(() => {
-        // Ignore audio play errors
-      });
+    if (selectedSound.type !== "none" && soundEnabled) {
+      try {
+        audioSourceRef.current = createAmbientSound(selectedSound.type);
+        if (audioSourceRef.current) {
+          audioSourceRef.current.start(0);
+        }
+      } catch (error) {
+        console.error('Error resuming ambient sound:', error);
+      }
     }
   };
 
@@ -202,6 +257,10 @@ const MeditationTimer = () => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
+    }
+    if (audioSourceRef.current) {
+      audioSourceRef.current.stop();
+      audioSourceRef.current = null;
     }
   };
 

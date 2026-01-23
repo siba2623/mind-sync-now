@@ -26,7 +26,7 @@ import type { User, Session } from "@supabase/supabase-js";
 import DailyCheckin from "@/components/DailyCheckin";
 import BreathingExercise from "@/components/BreathingExercise";
 import MeditationTimer from "@/components/MeditationTimer";
-import CrisisSupport from "@/components/CrisisSupport";
+import { CrisisSupport } from "@/components/CrisisSupport";
 
 interface WellnessActivity {
   id: string;
