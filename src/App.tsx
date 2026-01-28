@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -14,17 +15,42 @@ import Wellness from "./pages/Wellness";
 import HealthHub from "./pages/HealthHub";
 import SpotifyCallback from "./pages/SpotifyCallback";
 import AdminDashboard from "./pages/AdminDashboard";
+import Therapists from "./pages/Therapists";
+import Community from "./pages/Community";
 import NotFound from "./pages/NotFound";
 import MobileNavigation from "./components/MobileNavigation";
+import OnboardingTutorial from "./components/OnboardingTutorial";
+import DarkModeToggle from "./components/DarkModeToggle";
+import LanguageSelector from "./components/LanguageSelector";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const location = useLocation();
   const showMobileNav = !["/", "/auth", "/callback", "/admin"].includes(location.pathname);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    const onboardingCompleted = localStorage.getItem('onboarding_completed');
+    const isAuthPage = location.pathname === '/' || location.pathname === '/auth';
+    
+    if (!onboardingCompleted && !isAuthPage) {
+      setShowOnboarding(true);
+    }
+  }, [location.pathname]);
 
   return (
     <div className="relative">
+      {showOnboarding && (
+        <OnboardingTutorial onComplete={() => setShowOnboarding(false)} />
+      )}
+      
+      {/* Global controls */}
+      <div className="fixed top-4 right-4 z-40 flex gap-2">
+        <LanguageSelector />
+        <DarkModeToggle />
+      </div>
+
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
@@ -35,6 +61,8 @@ const AppContent = () => {
         <Route path="/enterprise" element={<Enterprise />} />
         <Route path="/wellness" element={<Wellness />} />
         <Route path="/health-hub" element={<HealthHub />} />
+        <Route path="/therapists" element={<Therapists />} />
+        <Route path="/community" element={<Community />} />
         <Route path="/callback" element={<SpotifyCallback />} />
         <Route path="/admin" element={<AdminDashboard />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

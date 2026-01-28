@@ -2,8 +2,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Phone, MessageCircle, AlertTriangle, ExternalLink } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export const CrisisSupport = ({ show = false }: { show?: boolean }) => {
+  const { t } = useTranslation();
+  
   if (!show) return null;
 
   const crisisResources = [
@@ -39,12 +42,12 @@ export const CrisisSupport = ({ show = false }: { show?: boolean }) => {
       <Alert className="mb-4 border-red-300 bg-red-100 dark:bg-red-900/20">
         <AlertTriangle className="h-5 w-5 text-red-600" />
         <AlertDescription className="text-red-800 dark:text-red-200 font-medium">
-          We've detected you may need immediate support. You're not alone - help is available 24/7.
+          {t('crisis.not_alone')}
         </AlertDescription>
       </Alert>
 
       <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-        Immediate Support Resources
+        {t('crisis.immediate_support')}
       </h3>
 
       <div className="space-y-4">
@@ -59,7 +62,7 @@ export const CrisisSupport = ({ show = false }: { show?: boolean }) => {
               </h4>
               {resource.type === "emergency" && (
                 <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
-                  Emergency
+                  {t('crisis.emergency')}
                 </span>
               )}
             </div>
@@ -93,7 +96,7 @@ export const CrisisSupport = ({ show = false }: { show?: boolean }) => {
 
       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <h4 className="font-semibold mb-2 text-gray-900 dark:text-white">
-          If this is a medical emergency:
+          {t('crisis.medical_emergency')}
         </h4>
         <div className="space-y-2">
           <Button
@@ -103,10 +106,10 @@ export const CrisisSupport = ({ show = false }: { show?: boolean }) => {
             onClick={() => window.location.href = "tel:10177"}
           >
             <Phone className="w-5 h-5" />
-            Call Emergency Services: 10177
+            {t('crisis.call_emergency')}: 10177
           </Button>
           <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-            Or go to your nearest hospital emergency room
+            {t('crisis.nearest_hospital')}
           </p>
         </div>
       </div>

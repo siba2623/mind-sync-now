@@ -7,7 +7,8 @@ import {
   TrendingUp, 
   User,
   Heart,
-  Trophy
+  Users,
+  Stethoscope
 } from "lucide-react";
 import IconWrapper from "@/components/ui/icon-wrapper";
 import { useMobile } from "@/hooks/useMobile";
@@ -34,16 +35,16 @@ const MobileNavigation = () => {
       color: "danger" as const
     },
     {
-      path: "/activities",
-      icon: Activity,
-      label: "Activities",
-      color: "success" as const
+      path: "/therapists",
+      icon: Stethoscope,
+      label: "Therapists",
+      color: "info" as const
     },
     {
-      path: "/insights",
-      icon: TrendingUp,
-      label: "Insights",
-      color: "info" as const
+      path: "/community",
+      icon: Users,
+      label: "Community",
+      color: "success" as const
     },
     {
       path: "/profile",
