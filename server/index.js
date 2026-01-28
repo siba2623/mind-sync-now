@@ -1,27 +1,70 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
+const cookieParser = require('cookie-parser')
+const jwt = require('jsonwebtoken')
 const detector = require('./detector')
 const alerts = require('./alerts')
-const db = require('./db')
+// Use SQLite adapter when available, fallback to JSON DB
+let db
+try {
+  db = require('./sqlite-db')
+  console.log('Using sqlite-db adapter, DB path:', db.DB_PATH)
+} catch (e) {
+  db = require('./db')
+  console.log('Using json-file db adapter')
+}
 
 const app = express()
 // Allow Authorization header for admin validation and enable preflight responses
 app.use(cors({
   origin: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
-  methods: ['GET', 'POST', 'OPTIONS']
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true
 }))
 app.use(bodyParser.json())
+app.use(cookieParser())
 
 // Simple admin auth middleware for alert endpoints
+const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_TOKEN || 'dev-jwt-secret'
+
 function adminAuth(req, res, next) {
-  const token = process.env.ADMIN_TOKEN
-  if (!token) return next()
-  const auth = req.headers.authorization || ''
-  if (auth === `Bearer ${token}`) return next()
-  return res.status(401).json({ error: 'unauthorized' })
+  // If no ADMIN_TOKEN configured, skip auth (dev mode)
+  if (!process.env.ADMIN_TOKEN) return next()
+
+  const authHeader = req.headers.authorization || ''
+  const tokenFromHeader = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  const tokenFromCookie = req.cookies && req.cookies.admin_jwt
+  const token = tokenFromHeader || tokenFromCookie
+
+  if (!token) return res.status(401).json({ error: 'unauthorized' })
+
+  try {
+    jwt.verify(token, JWT_SECRET)
+    return next()
+  } catch (e) {
+    return res.status(401).json({ error: 'unauthorized' })
+  }
 }
+
+// Admin login: exchange raw admin token for a short-lived JWT stored in an HttpOnly cookie
+app.post('/admin/login', (req, res) => {
+  const { token } = req.body || {}
+  if (!token) return res.status(400).json({ error: 'missing token' })
+  if (process.env.ADMIN_TOKEN && token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'unauthorized' })
+
+  const signed = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '2h' })
+  const cookieOpts = { httpOnly: true, sameSite: 'lax' }
+  if (process.env.NODE_ENV === 'production') cookieOpts.secure = true
+  res.cookie('admin_jwt', signed, cookieOpts)
+  res.json({ ok: true })
+})
+
+app.post('/admin/logout', (req, res) => {
+  res.clearCookie('admin_jwt')
+  res.json({ ok: true })
+})
 
 app.post('/ingest', async (req, res) => {
   const payload = req.body || {}
