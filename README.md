@@ -84,6 +84,11 @@ This project requires several API keys to function properly. Follow these steps:
 
 ⚠️ **Important**: Never commit your `.env` file to version control. It's already included in `.gitignore`.
 
+## Development notes
+
+- During local development the app enables a relaxed Content Security Policy (CSP) and CORS settings to allow the frontend (Vite dev server) to call the local backend at `http://localhost:3001`.
+- These changes are for developer convenience only and should be removed or hardened before deploying to production. See `index.html` for the dev-only CSP meta tag and `server/index.js` for the CORS configuration.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
