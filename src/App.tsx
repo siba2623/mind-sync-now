@@ -22,6 +22,8 @@ import MobileNavigation from "./components/MobileNavigation";
 import OnboardingTutorial from "./components/OnboardingTutorial";
 import DarkModeToggle from "./components/DarkModeToggle";
 import LanguageSelector from "./components/LanguageSelector";
+import EscalationQueue from "./components/EscalationQueue";
+import { Navigate } from 'react-router-dom'
 
 const queryClient = new QueryClient();
 
@@ -65,6 +67,7 @@ const AppContent = () => {
         <Route path="/community" element={<Community />} />
         <Route path="/callback" element={<SpotifyCallback />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/escalation" element={<ProtectedEscalation />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -72,6 +75,13 @@ const AppContent = () => {
     </div>
   );
 };
+
+// Simple client-side guard for clinician/admin routes
+function ProtectedEscalation() {
+  // Server-side JWT cookie now protects the escalation endpoints.
+  // Let `EscalationQueue` handle redirecting to `/auth` on 401.
+  return <EscalationQueue />
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

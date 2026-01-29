@@ -1,0 +1,33 @@
+name: Server tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ feat/sqlite-migration ]
+
+jobs:
+  server-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [18]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install server dependencies
+        working-directory: server
+        run: |
+          npm ci
+
+      - name: Run server tests
+        working-directory: server
+        run: |
+          npm test

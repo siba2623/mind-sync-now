@@ -27,6 +27,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [adminToken, setAdminToken] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -107,6 +108,33 @@ const Auth = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
+
+  // Admin login: exchange raw admin token for an HttpOnly JWT cookie
+  const handleAdminLogin = async () => {
+    if (!adminToken) {
+      toast({ title: 'Error', description: 'Enter admin token', variant: 'destructive' })
+      return
+    }
+    try {
+      const res = await fetch('http://localhost:3001/admin/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: adminToken })
+      })
+      if (res.status === 401) {
+        toast({ title: 'Unauthorized', description: 'Invalid admin token', variant: 'destructive' })
+        return
+      }
+      if (!res.ok) throw new Error(`Validation failed (${res.status})`)
+      toast({ title: 'Admin access granted', description: 'Redirecting to escalation queue' })
+      navigate('/escalation')
+    } catch (e: any) {
+      const msg = e?.message || 'Failed to validate token'
+      toast({ title: 'Connection error', description: `${msg}. Is the backend running on port 3001?`, variant: 'destructive' })
+      console.error('Admin login failed:', e)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -277,6 +305,27 @@ const Auth = () => {
                 </form>
               </CardContent>
             </Card>
+            
+              {/* Admin / Clinician quick login */}
+              <div className="mt-4 text-center">
+                <Card className="shadow-sm max-w-md mx-auto">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Clinician / Admin Access</CardTitle>
+                    <CardDescription>Enter admin token to access escalation queue</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <Label htmlFor="adminToken">Admin Token</Label>
+                      <Input id="adminToken" type="text" placeholder="Enter admin token" value={adminToken} onChange={(e)=>setAdminToken(e.target.value)} />
+                      <div className="flex gap-2">
+                        <Button onClick={handleAdminLogin} className="w-full">Sign in as Admin</Button>
+                        <Button variant="ghost" onClick={async () => { setAdminToken(''); try { await fetch('http://localhost:3001/admin/logout', { method: 'POST', credentials: 'include' }) } catch {} toast({ title: 'Signed out', description: 'Admin session cleared' }) }}>Sign out</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
           </div>
         </div>
       </div>
