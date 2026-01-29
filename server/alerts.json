@@ -1,0 +1,185 @@
+{
+  "alerts": [
+    {
+      "id": 1,
+      "ts": "2026-01-28T08:58:24.507Z",
+      "riskLevel": "high",
+      "score": 21,
+      "reasons": [
+        "keyword:kill myself",
+        "keyword:want to die",
+        "keyword:want to die",
+        "phq9:severe"
+      ],
+      "payload": {
+        "text": "I want to die and I will kill myself",
+        "phq9": 22
+      },
+      "status": "acknowledged",
+      "acknowledgedAt": "2026-01-28T09:47:05.872Z"
+    },
+    {
+      "id": 2,
+      "ts": "2026-01-28T08:58:24.520Z",
+      "riskLevel": "high",
+      "score": 10,
+      "reasons": [
+        "heuristic:hopeless",
+        "heuristic:alone",
+        "heuristic:give up",
+        "phq9:moderately_severe"
+      ],
+      "payload": {
+        "text": "I feel hopeless and alone and want to give up",
+        "phq9": 16
+      },
+      "status": "acknowledged",
+      "acknowledgedAt": "2026-01-28T09:47:04.434Z"
+    },
+    {
+      "id": 3,
+      "ts": "2026-01-28T08:58:37.695Z",
+      "riskLevel": "high",
+      "score": 21,
+      "reasons": [
+        "keyword:kill myself",
+        "keyword:want to die",
+        "keyword:want to die",
+        "phq9:severe"
+      ],
+      "payload": {
+        "text": "I want to die and I will kill myself",
+        "phq9": 22
+      },
+      "status": "acknowledged",
+      "acknowledgedAt": "2026-01-28T09:46:56.777Z"
+    },
+    {
+      "id": 4,
+      "ts": "2026-01-28T08:58:37.712Z",
+      "riskLevel": "high",
+      "score": 10,
+      "reasons": [
+        "heuristic:hopeless",
+        "heuristic:alone",
+        "heuristic:give up",
+        "phq9:moderately_severe"
+      ],
+      "payload": {
+        "text": "I feel hopeless and alone and want to give up",
+        "phq9": 16
+      },
+      "status": "acknowledged",
+      "acknowledgedAt": "2026-01-28T09:46:54.655Z"
+    },
+    {
+      "id": 5,
+      "ts": "2026-01-28T09:00:13.984Z",
+      "riskLevel": "high",
+      "score": 21,
+      "reasons": [
+        "keyword:kill myself",
+        "keyword:want to die",
+        "keyword:want to die",
+        "phq9:severe"
+      ],
+      "payload": {
+        "text": "I want to die and I will kill myself",
+        "phq9": 22
+      },
+      "status": "acknowledged",
+      "acknowledgedAt": "2026-01-28T09:46:50.409Z"
+    },
+    {
+      "id": 6,
+      "ts": "2026-01-28T09:00:13.993Z",
+      "riskLevel": "high",
+      "score": 10,
+      "reasons": [
+        "heuristic:hopeless",
+        "heuristic:alone",
+        "heuristic:give up",
+        "phq9:moderately_severe"
+      ],
+      "payload": {
+        "text": "I feel hopeless and alone and want to give up",
+        "phq9": 16
+      },
+      "status": "acknowledged",
+      "acknowledgedAt": "2026-01-28T09:46:40.810Z"
+    },
+    {
+      "id": 7,
+      "ts": "2026-01-29T09:18:45.939Z",
+      "riskLevel": "high",
+      "score": 21,
+      "reasons": [
+        "keyword:kill myself",
+        "keyword:want to die",
+        "keyword:want to die",
+        "phq9:severe"
+      ],
+      "payload": {
+        "text": "I want to die and I will kill myself",
+        "phq9": 22
+      },
+      "status": "open",
+      "acknowledgedAt": null
+    },
+    {
+      "id": 8,
+      "ts": "2026-01-29T09:18:45.953Z",
+      "riskLevel": "high",
+      "score": 10,
+      "reasons": [
+        "heuristic:hopeless",
+        "heuristic:alone",
+        "heuristic:give up",
+        "phq9:moderately_severe"
+      ],
+      "payload": {
+        "text": "I feel hopeless and alone and want to give up",
+        "phq9": 16
+      },
+      "status": "open",
+      "acknowledgedAt": null
+    },
+    {
+      "id": 9,
+      "ts": "2026-01-29T09:19:17.273Z",
+      "riskLevel": "high",
+      "score": 21,
+      "reasons": [
+        "keyword:kill myself",
+        "keyword:want to die",
+        "keyword:want to die",
+        "phq9:severe"
+      ],
+      "payload": {
+        "text": "I want to die and I will kill myself",
+        "phq9": 22
+      },
+      "status": "open",
+      "acknowledgedAt": null
+    },
+    {
+      "id": 10,
+      "ts": "2026-01-29T09:19:17.281Z",
+      "riskLevel": "high",
+      "score": 10,
+      "reasons": [
+        "heuristic:hopeless",
+        "heuristic:alone",
+        "heuristic:give up",
+        "phq9:moderately_severe"
+      ],
+      "payload": {
+        "text": "I feel hopeless and alone and want to give up",
+        "phq9": 16
+      },
+      "status": "open",
+      "acknowledgedAt": null
+    }
+  ],
+  "seq": 11
+}
