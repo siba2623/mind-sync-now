@@ -421,59 +421,59 @@ export const MedicationTracker = () => {
   return (
     <div className="space-y-6">
       {/* Adherence Stats Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4 bg-gradient-to-br from-orange-50 to-red-50">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Flame className="w-5 h-5 text-orange-600" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <Card className="p-3 md:p-4 bg-gradient-to-br from-orange-50 to-red-50">
+          <div className="flex items-center gap-2 md:gap-3 mb-2">
+            <div className="p-1.5 md:p-2 bg-orange-100 rounded-lg">
+              <Flame className="w-4 h-4 md:w-5 md:h-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{adherenceStats.streak}</p>
+              <p className="text-xl md:text-2xl font-bold text-gray-900">{adherenceStats.streak}</p>
               <p className="text-xs text-gray-600">Day Streak</p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Keep it going! 🔥</p>
+          <p className="text-xs text-muted-foreground hidden md:block">Keep it going! 🔥</p>
         </Card>
 
-        <Card className={`p-4 ${getAdherenceColor(adherenceStats.adherenceRate)}`}>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-white/50 rounded-lg">
-              <TrendingUp className="w-5 h-5" />
+        <Card className={`p-3 md:p-4 ${getAdherenceColor(adherenceStats.adherenceRate)}`}>
+          <div className="flex items-center gap-2 md:gap-3 mb-2">
+            <div className="p-1.5 md:p-2 bg-white/50 rounded-lg">
+              <TrendingUp className="w-4 h-4 md:w-5 md:h-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{adherenceStats.adherenceRate}%</p>
-              <p className="text-xs">Adherence Rate</p>
+              <p className="text-xl md:text-2xl font-bold">{adherenceStats.adherenceRate}%</p>
+              <p className="text-xs">Adherence</p>
             </div>
           </div>
-          <Progress value={adherenceStats.adherenceRate} className="h-2" />
+          <Progress value={adherenceStats.adherenceRate} className="h-1.5 md:h-2" />
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-blue-600" />
+        <Card className="p-3 md:p-4 bg-gradient-to-br from-blue-50 to-cyan-50">
+          <div className="flex items-center gap-2 md:gap-3 mb-2">
+            <div className="p-1.5 md:p-2 bg-blue-100 rounded-lg">
+              <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{adherenceStats.takenDoses}</p>
-              <p className="text-xs text-gray-600">Doses Taken</p>
+              <p className="text-xl md:text-2xl font-bold text-gray-900">{adherenceStats.takenDoses}</p>
+              <p className="text-xs text-gray-600">Doses</p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Last 30 days</p>
+          <p className="text-xs text-muted-foreground hidden md:block">Last 30 days</p>
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-purple-50 to-pink-50">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Trophy className="w-5 h-5 text-purple-600" />
+        <Card className="p-3 md:p-4 bg-gradient-to-br from-purple-50 to-pink-50">
+          <div className="flex items-center gap-2 md:gap-3 mb-2">
+            <div className="p-1.5 md:p-2 bg-purple-100 rounded-lg">
+              <Trophy className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xl md:text-2xl font-bold text-gray-900">
                 {adherenceStats.takenDoses * 10}
               </p>
-              <p className="text-xs text-gray-600">Vitality Points</p>
+              <p className="text-xs text-gray-600">Points</p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">10 pts per dose</p>
+          <p className="text-xs text-muted-foreground hidden md:block">10 pts per dose</p>
         </Card>
       </div>
 
@@ -494,7 +494,7 @@ export const MedicationTracker = () => {
         {showAddForm && (
           <Card className="p-4 mb-6 bg-muted">
             <h4 className="font-semibold mb-4">Add New Medication</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
               <div>
                 <Label htmlFor="medName">Medication Name</Label>
                 <Input 
@@ -599,9 +599,9 @@ export const MedicationTracker = () => {
           </Card>
         )}
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           {medications.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="col-span-full text-center py-12">
               <Pill className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <h4 className="font-semibold mb-2">No Medications Added</h4>
               <p className="text-sm text-muted-foreground mb-4">
@@ -617,7 +617,7 @@ export const MedicationTracker = () => {
               return (
                 <Card
                   key={med.id}
-                  className={`p-4 ${
+                  className={`p-3 md:p-4 ${
                     isTimeNow && !isTaken
                       ? "border-2 border-primary bg-primary/5"
                       : lowOnPills
@@ -625,120 +625,115 @@ export const MedicationTracker = () => {
                       : ""
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <h4 className="font-semibold">{med.name}</h4>
-                        {isTaken ? (
-                          <Badge className="bg-green-100 text-green-700">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Taken Today
-                          </Badge>
-                        ) : isTimeNow ? (
-                          <Badge className="bg-yellow-100 text-yellow-700">
-                            <Bell className="w-3 h-3 mr-1" />
-                            Time to Take
-                          </Badge>
-                        ) : null}
-                        {lowOnPills && (
-                          <Badge className="bg-orange-100 text-orange-700">
-                            <Package className="w-3 h-3 mr-1" />
-                            Refill Soon
-                          </Badge>
-                        )}
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm md:text-base truncate">{med.name}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {med.dosage} • {med.frequency}
+                        </p>
                       </div>
-                      
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        <p>
-                          <strong>Dosage:</strong> {med.dosage} • {med.frequency}
-                        </p>
-                        <p className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {med.times.join(", ")}
-                        </p>
-                        <p>
-                          <strong>Prescribed by:</strong> {med.prescribedBy}
-                        </p>
-                        {med.pillsRemaining !== undefined && (
-                          <p className="flex items-center gap-1">
-                            <Package className="w-3 h-3" />
-                            {med.pillsRemaining} pills remaining
-                            {med.refillDate && ` • Refill: ${format(new Date(med.refillDate), 'MMM d')}`}
-                          </p>
-                        )}
-                        {med.notes && (
-                          <p className="text-xs italic">{med.notes}</p>
-                        )}
-                      </div>
-
-                      {/* Side Effect Form */}
-                      {showSideEffectForm === med.id && (
-                        <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                          <Label className="text-xs font-semibold mb-2 block">
-                            Report Side Effects (optional)
-                          </Label>
-                          <Textarea
-                            placeholder="Describe any side effects..."
-                            value={sideEffectNote}
-                            onChange={(e) => setSideEffectNote(e.target.value)}
-                            rows={2}
-                            className="text-sm mb-2"
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => markAsTaken(med.id, true)}
-                              className="gap-2"
-                            >
-                              <CheckCircle className="w-3 h-3" />
-                              Log with Side Effects
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setShowSideEffectForm(null);
-                                setSideEffectNote('');
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      {!isTaken && !showSideEffectForm && (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() => markAsTaken(med.id, false)}
-                            className="gap-2"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Mark Taken
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setShowSideEffectForm(med.id)}
-                            className="gap-2"
-                          >
-                            <AlertTriangle className="w-4 h-4" />
-                            Side Effects
-                          </Button>
-                        </>
-                      )}
                       <Button 
                         size="sm" 
                         variant="ghost" 
-                        className="gap-2"
+                        className="h-8 w-8 p-0 shrink-0"
                         onClick={() => deleteMedication(med.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {isTaken ? (
+                        <Badge className="bg-green-100 text-green-700 text-xs">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Taken
+                        </Badge>
+                      ) : isTimeNow ? (
+                        <Badge className="bg-yellow-100 text-yellow-700 text-xs">
+                          <Bell className="w-3 h-3 mr-1" />
+                          Time Now
+                        </Badge>
+                      ) : null}
+                      {lowOnPills && (
+                        <Badge className="bg-orange-100 text-orange-700 text-xs">
+                          <Package className="w-3 h-3 mr-1" />
+                          Refill
+                        </Badge>
+                      )}
+                    </div>
+                      
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <p className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 shrink-0" />
+                        <span>{med.times.join(", ")}</span>
+                      </p>
+                      {med.pillsRemaining !== undefined && (
+                        <p className="flex items-center gap-1">
+                          <Package className="w-3 h-3 shrink-0" />
+                          <span>{med.pillsRemaining} pills left</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Side Effect Form */}
+                    {showSideEffectForm === med.id && (
+                      <div className="p-2 md:p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <Label className="text-xs font-semibold mb-2 block">
+                          Report Side Effects
+                        </Label>
+                        <Textarea
+                          placeholder="Describe any side effects..."
+                          value={sideEffectNote}
+                          onChange={(e) => setSideEffectNote(e.target.value)}
+                          rows={2}
+                          className="text-xs md:text-sm mb-2"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => markAsTaken(med.id, true)}
+                            className="gap-1 text-xs"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            Log
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setShowSideEffectForm(null);
+                              setSideEffectNote('');
+                            }}
+                            className="text-xs"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {!isTaken && !showSideEffectForm && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => markAsTaken(med.id, false)}
+                          className="flex-1 gap-1 text-xs md:text-sm"
+                        >
+                          <CheckCircle className="w-3 h-3 md:w-4 md:h-4" />
+                          Mark Taken
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowSideEffectForm(med.id)}
+                          className="gap-1 text-xs md:text-sm"
+                        >
+                          <AlertTriangle className="w-3 h-3 md:w-4 md:h-4" />
+                          <span className="hidden md:inline">Side Effects</span>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </Card>
               );
