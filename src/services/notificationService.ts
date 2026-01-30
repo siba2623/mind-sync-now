@@ -14,6 +14,7 @@ export interface NotificationSchedule {
 
 class NotificationService {
   private isNative = Capacitor.isNativePlatform();
+  private notificationQueue: Array<{id: number, scheduledFor: Date}> = [];
 
   async requestPermissions(): Promise<boolean> {
     if (!this.isNative) {
@@ -72,6 +73,165 @@ class NotificationService {
         `Time to take ${medicationName}`,
         scheduleTime
       );
+    }
+  }
+
+  async scheduleMoodCheckIn(times: string[] = ['09:00', '14:00', '20:00']): Promise<void> {
+    const hasPermission = await this.requestPermissions();
+    if (!hasPermission) return;
+
+    times.forEach(async (time, index) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      const scheduleTime = new Date();
+      scheduleTime.setHours(hours, minutes, 0, 0);
+
+      if (this.isNative) {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: 9000 + index,
+              title: '🌟 Mood Check-In',
+              body: 'How are you feeling right now? Take a moment to log your mood.',
+              schedule: {
+                at: scheduleTime,
+                repeats: true,
+                every: 'day',
+              },
+              sound: 'default',
+              actionTypeId: 'MOOD_CHECKIN',
+            },
+          ],
+        });
+      }
+    });
+  }
+
+  async sendRiskLevelAlert(riskLevel: string, recommendations: string[]): Promise<void> {
+    const hasPermission = await this.requestPermissions();
+    if (!hasPermission) return;
+
+    const urgency = riskLevel === 'RED' || riskLevel === 'ORANGE';
+    const title = urgency ? '🚨 Wellness Alert' : '⚠️ Wellness Update';
+    const body = urgency 
+      ? 'Your wellness indicators suggest you may need support. Tap to view recommendations.'
+      : 'Your wellness patterns have changed. Check your personalized recommendations.';
+
+    if (this.isNative) {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: Date.now(),
+            title,
+            body,
+            schedule: { at: new Date(Date.now() + 1000) },
+            sound: urgency ? 'default' : undefined,
+            actionTypeId: 'RISK_ALERT',
+            extra: {
+              riskLevel,
+              recommendations: recommendations.slice(0, 3),
+            },
+          },
+        ],
+      });
+    } else {
+      new Notification(title, {
+        body,
+        icon: '/icon-192x192.png',
+        tag: 'risk-alert',
+        requireInteraction: urgency,
+      });
+    }
+  }
+
+  async sendAdherenceReminder(medicationName: string, streak: number): Promise<void> {
+    const hasPermission = await this.requestPermissions();
+    if (!hasPermission) return;
+
+    const title = streak > 0 
+      ? `🔥 ${streak}-Day Streak!` 
+      : '💊 Medication Reminder';
+    const body = streak > 0
+      ? `Don't break your streak! Time to take ${medicationName}.`
+      : `Remember to take your ${medicationName} today.`;
+
+    if (this.isNative) {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: Date.now(),
+            title,
+            body,
+            schedule: { at: new Date(Date.now() + 1000) },
+            sound: 'default',
+            actionTypeId: 'ADHERENCE',
+          },
+        ],
+      });
+    } else {
+      new Notification(title, {
+        body,
+        icon: '/icon-192x192.png',
+      });
+    }
+  }
+
+  async sendWellnessTip(tip: string, category: 'sleep' | 'exercise' | 'nutrition' | 'mindfulness'): Promise<void> {
+    const hasPermission = await this.requestPermissions();
+    if (!hasPermission) return;
+
+    const icons = {
+      sleep: '😴',
+      exercise: '🏃',
+      nutrition: '🥗',
+      mindfulness: '🧘'
+    };
+
+    const title = `${icons[category]} Wellness Tip`;
+
+    if (this.isNative) {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: Date.now(),
+            title,
+            body: tip,
+            schedule: { at: new Date(Date.now() + 1000) },
+            sound: undefined,
+            actionTypeId: 'WELLNESS_TIP',
+            extra: { category },
+          },
+        ],
+      });
+    } else {
+      new Notification(title, {
+        body: tip,
+        icon: '/icon-192x192.png',
+      });
+    }
+  }
+
+  async sendVitalityPointsUpdate(points: number, activity: string): Promise<void> {
+    const hasPermission = await this.requestPermissions();
+    if (!hasPermission) return;
+
+    if (this.isNative) {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: Date.now(),
+            title: '🏆 Vitality Points Earned!',
+            body: `+${points} points for ${activity}`,
+            schedule: { at: new Date(Date.now() + 1000) },
+            sound: undefined,
+            actionTypeId: 'VITALITY_POINTS',
+          },
+        ],
+      });
+    } else {
+      new Notification('🏆 Vitality Points Earned!', {
+        body: `+${points} points for ${activity}`,
+        icon: '/icon-192x192.png',
+      });
     }
   }
 

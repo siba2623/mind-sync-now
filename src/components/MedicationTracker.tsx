@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { 
   Pill, 
   Plus, 
@@ -12,11 +13,17 @@ import {
   CheckCircle, 
   AlertCircle,
   Trash2,
-  Bell
+  Bell,
+  Flame,
+  TrendingUp,
+  Calendar,
+  AlertTriangle,
+  Trophy,
+  Package
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, subDays, differenceInDays } from "date-fns";
 import { notificationService } from "@/services/notificationService";
 
 interface Medication {
@@ -29,13 +36,40 @@ interface Medication {
   startDate: string;
   endDate?: string;
   notes?: string;
+  refillDate?: string;
+  pillsRemaining?: number;
+}
+
+interface MedicationLog {
+  id: string;
+  medicationId: string;
+  takenAt: string;
+  sideEffects?: string;
+}
+
+interface AdherenceStats {
+  streak: number;
+  adherenceRate: number;
+  totalDoses: number;
+  takenDoses: number;
+  missedDoses: number;
 }
 
 export const MedicationTracker = () => {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [todaysTaken, setTodaysTaken] = useState<Set<string>>(new Set());
+  const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
+  const [adherenceStats, setAdherenceStats] = useState<AdherenceStats>({
+    streak: 0,
+    adherenceRate: 0,
+    totalDoses: 0,
+    takenDoses: 0,
+    missedDoses: 0
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [showSideEffectForm, setShowSideEffectForm] = useState<string | null>(null);
+  const [sideEffectNote, setSideEffectNote] = useState('');
   const { toast } = useToast();
 
   // Form state
@@ -46,13 +80,21 @@ export const MedicationTracker = () => {
     time: '08:00',
     prescribedBy: '',
     startDate: format(new Date(), 'yyyy-MM-dd'),
-    notes: ''
+    notes: '',
+    refillDate: '',
+    pillsRemaining: 30
   });
 
   useEffect(() => {
     loadMedications();
-    loadTodaysTaken();
+    loadMedicationLogs();
   }, []);
+
+  useEffect(() => {
+    if (medications.length > 0 && medicationLogs.length >= 0) {
+      calculateAdherenceStats();
+    }
+  }, [medications, medicationLogs]);
 
   const loadMedications = async () => {
     try {
@@ -113,29 +155,113 @@ export const MedicationTracker = () => {
     }
   };
 
-  const loadTodaysTaken = async () => {
-    // Load from database which medications were taken today
-    setTodaysTaken(new Set());
+  const loadMedicationLogs = async () => {
+    try {
+      const stored = localStorage.getItem('medicationLogs');
+      if (stored) {
+        const logs = JSON.parse(stored);
+        setMedicationLogs(logs);
+        
+        // Update today's taken set
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const todayLogs = logs.filter((log: MedicationLog) => 
+          log.takenAt.startsWith(today)
+        );
+        setTodaysTaken(new Set(todayLogs.map((log: MedicationLog) => log.medicationId)));
+      }
+    } catch (error) {
+      console.error('Error loading medication logs:', error);
+    }
   };
 
-  const markAsTaken = async (medId: string) => {
+  const calculateAdherenceStats = () => {
+    const last30Days = subDays(new Date(), 30);
+    const recentLogs = medicationLogs.filter(log => 
+      new Date(log.takenAt) >= last30Days
+    );
+
+    // Calculate expected doses (simplified: 1 dose per day per medication)
+    const daysTracked = Math.min(30, medications.length > 0 ? 
+      differenceInDays(new Date(), new Date(medications[0].startDate)) : 0
+    );
+    const totalExpectedDoses = medications.length * daysTracked;
+    const takenDoses = recentLogs.length;
+    const missedDoses = Math.max(0, totalExpectedDoses - takenDoses);
+    const adherenceRate = totalExpectedDoses > 0 ? 
+      Math.round((takenDoses / totalExpectedDoses) * 100) : 0;
+
+    // Calculate streak
+    let streak = 0;
+    let currentDate = new Date();
+    while (streak < 365) {
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      const hasLog = recentLogs.some(log => log.takenAt.startsWith(dateStr));
+      if (!hasLog) break;
+      streak++;
+      currentDate = subDays(currentDate, 1);
+    }
+
+    setAdherenceStats({
+      streak,
+      adherenceRate,
+      totalDoses: totalExpectedDoses,
+      takenDoses,
+      missedDoses
+    });
+  };
+
+  const markAsTaken = async (medId: string, withSideEffects: boolean = false) => {
     const newTaken = new Set(todaysTaken);
     newTaken.add(medId);
     setTodaysTaken(newTaken);
 
+    // Create log entry
+    const newLog: MedicationLog = {
+      id: crypto.randomUUID(),
+      medicationId: medId,
+      takenAt: new Date().toISOString(),
+      sideEffects: withSideEffects ? sideEffectNote : undefined
+    };
+
+    const updatedLogs = [...medicationLogs, newLog];
+    setMedicationLogs(updatedLogs);
+    localStorage.setItem('medicationLogs', JSON.stringify(updatedLogs));
+
+    // Update pills remaining
+    const med = medications.find(m => m.id === medId);
+    if (med && med.pillsRemaining !== undefined) {
+      const updatedMeds = medications.map(m => 
+        m.id === medId ? { ...m, pillsRemaining: Math.max(0, (m.pillsRemaining || 0) - 1) } : m
+      );
+      setMedications(updatedMeds);
+      localStorage.setItem('medications', JSON.stringify(updatedMeds));
+    }
+
+    // Award Vitality points (10 points per dose)
+    const vitalityPoints = 10;
+    
     toast({
-      title: "Medication Logged",
-      description: "Great job staying on track!",
+      title: "✅ Medication Logged!",
+      description: `Great job staying on track! +${vitalityPoints} Vitality points`,
     });
 
-    // Save to database
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // In production, save to medication_logs table
-      }
-    } catch (error) {
-      console.error("Error logging medication:", error);
+    if (withSideEffects) {
+      setShowSideEffectForm(null);
+      setSideEffectNote('');
+    }
+
+    // Check for weekly adherence bonus (75 points)
+    const thisWeekLogs = updatedLogs.filter(log => {
+      const logDate = new Date(log.takenAt);
+      const weekAgo = subDays(new Date(), 7);
+      return logDate >= weekAgo;
+    });
+
+    if (thisWeekLogs.length >= 7 * medications.length) {
+      toast({
+        title: "🏆 Weekly Adherence Bonus!",
+        description: "+75 Vitality points for perfect weekly adherence!",
+      });
     }
   };
 
@@ -161,7 +287,9 @@ export const MedicationTracker = () => {
         times: [formData.time],
         prescribedBy: formData.prescribedBy,
         startDate: formData.startDate,
-        notes: formData.notes
+        notes: formData.notes,
+        refillDate: formData.refillDate,
+        pillsRemaining: formData.pillsRemaining
       };
 
       // Save to local storage temporarily
@@ -187,6 +315,13 @@ export const MedicationTracker = () => {
                 notes: formData.notes
               }
             ]);
+
+          // Schedule notification reminder
+          await notificationService.scheduleMedicationReminder(
+            formData.name,
+            formData.time,
+            parseInt(newMed.id.replace(/\D/g, '').slice(0, 8))
+          );
         } catch (dbError) {
           console.log('Database save failed, using local storage:', dbError);
         }
@@ -200,7 +335,9 @@ export const MedicationTracker = () => {
         time: '08:00',
         prescribedBy: '',
         startDate: format(new Date(), 'yyyy-MM-dd'),
-        notes: ''
+        notes: '',
+        refillDate: '',
+        pillsRemaining: 30
       });
 
       setShowAddForm(false);
@@ -270,8 +407,76 @@ export const MedicationTracker = () => {
     });
   };
 
+  const needsRefill = (med: Medication) => {
+    if (!med.pillsRemaining) return false;
+    return med.pillsRemaining <= 7; // Alert when 7 days or less remaining
+  };
+
+  const getAdherenceColor = (rate: number) => {
+    if (rate >= 90) return "text-green-600 bg-green-50";
+    if (rate >= 75) return "text-yellow-600 bg-yellow-50";
+    return "text-red-600 bg-red-50";
+  };
+
   return (
     <div className="space-y-6">
+      {/* Adherence Stats Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-4 bg-gradient-to-br from-orange-50 to-red-50">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Flame className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{adherenceStats.streak}</p>
+              <p className="text-xs text-gray-600">Day Streak</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Keep it going! 🔥</p>
+        </Card>
+
+        <Card className={`p-4 ${getAdherenceColor(adherenceStats.adherenceRate)}`}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-white/50 rounded-lg">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{adherenceStats.adherenceRate}%</p>
+              <p className="text-xs">Adherence Rate</p>
+            </div>
+          </div>
+          <Progress value={adherenceStats.adherenceRate} className="h-2" />
+        </Card>
+
+        <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{adherenceStats.takenDoses}</p>
+              <p className="text-xs text-gray-600">Doses Taken</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Last 30 days</p>
+        </Card>
+
+        <Card className="p-4 bg-gradient-to-br from-purple-50 to-pink-50">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Trophy className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">
+                {adherenceStats.takenDoses * 10}
+              </p>
+              <p className="text-xs text-gray-600">Vitality Points</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">10 pts per dose</p>
+        </Card>
+      </div>
+
       <Card className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -349,14 +554,34 @@ export const MedicationTracker = () => {
                   onChange={(e) => setFormData({...formData, startDate: e.target.value})}
                 />
               </div>
+              <div>
+                <Label htmlFor="refillDate">Refill Date (optional)</Label>
+                <Input 
+                  id="refillDate" 
+                  type="date" 
+                  value={formData.refillDate}
+                  onChange={(e) => setFormData({...formData, refillDate: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="pillsRemaining">Pills Remaining</Label>
+                <Input 
+                  id="pillsRemaining" 
+                  type="number" 
+                  placeholder="30" 
+                  value={formData.pillsRemaining}
+                  onChange={(e) => setFormData({...formData, pillsRemaining: parseInt(e.target.value) || 0})}
+                />
+              </div>
             </div>
             <div className="mt-4">
               <Label htmlFor="notes">Notes (optional)</Label>
-              <Input 
+              <Textarea 
                 id="notes" 
-                placeholder="e.g., Take with food" 
+                placeholder="e.g., Take with food, avoid alcohol" 
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                rows={2}
               />
             </div>
             <div className="flex gap-2 mt-4">
@@ -387,6 +612,7 @@ export const MedicationTracker = () => {
             medications.map((med) => {
               const isTaken = todaysTaken.has(med.id);
               const isTimeNow = isTimeForMedication(med.times);
+              const lowOnPills = needsRefill(med);
 
               return (
                 <Card
@@ -394,12 +620,14 @@ export const MedicationTracker = () => {
                   className={`p-4 ${
                     isTimeNow && !isTaken
                       ? "border-2 border-primary bg-primary/5"
+                      : lowOnPills
+                      ? "border-2 border-orange-300 bg-orange-50/50"
                       : ""
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <h4 className="font-semibold">{med.name}</h4>
                         {isTaken ? (
                           <Badge className="bg-green-100 text-green-700">
@@ -412,6 +640,12 @@ export const MedicationTracker = () => {
                             Time to Take
                           </Badge>
                         ) : null}
+                        {lowOnPills && (
+                          <Badge className="bg-orange-100 text-orange-700">
+                            <Package className="w-3 h-3 mr-1" />
+                            Refill Soon
+                          </Badge>
+                        )}
                       </div>
                       
                       <div className="space-y-1 text-sm text-muted-foreground">
@@ -425,22 +659,76 @@ export const MedicationTracker = () => {
                         <p>
                           <strong>Prescribed by:</strong> {med.prescribedBy}
                         </p>
+                        {med.pillsRemaining !== undefined && (
+                          <p className="flex items-center gap-1">
+                            <Package className="w-3 h-3" />
+                            {med.pillsRemaining} pills remaining
+                            {med.refillDate && ` • Refill: ${format(new Date(med.refillDate), 'MMM d')}`}
+                          </p>
+                        )}
                         {med.notes && (
                           <p className="text-xs italic">{med.notes}</p>
                         )}
                       </div>
+
+                      {/* Side Effect Form */}
+                      {showSideEffectForm === med.id && (
+                        <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                          <Label className="text-xs font-semibold mb-2 block">
+                            Report Side Effects (optional)
+                          </Label>
+                          <Textarea
+                            placeholder="Describe any side effects..."
+                            value={sideEffectNote}
+                            onChange={(e) => setSideEffectNote(e.target.value)}
+                            rows={2}
+                            className="text-sm mb-2"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => markAsTaken(med.id, true)}
+                              className="gap-2"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              Log with Side Effects
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setShowSideEffectForm(null);
+                                setSideEffectNote('');
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      {!isTaken && (
-                        <Button
-                          size="sm"
-                          onClick={() => markAsTaken(med.id)}
-                          className="gap-2"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Mark Taken
-                        </Button>
+                      {!isTaken && !showSideEffectForm && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => markAsTaken(med.id, false)}
+                            className="gap-2"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Mark Taken
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowSideEffectForm(med.id)}
+                            className="gap-2"
+                          >
+                            <AlertTriangle className="w-4 h-4" />
+                            Side Effects
+                          </Button>
+                        </>
                       )}
                       <Button 
                         size="sm" 
