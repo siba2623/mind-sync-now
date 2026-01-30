@@ -47,6 +47,7 @@ import CrisisDetection from "@/components/CrisisDetection";
 import FamilyWellnessHub from "@/components/FamilyWellnessHub";
 import { RiskAssessmentWidget } from "@/components/RiskAssessmentWidget";
 import { VitalityPointsWidget } from "@/components/VitalityPointsWidget";
+import { MedicationTracker } from "@/components/MedicationTracker";
 
 const moods = [
   { emoji: "😊", label: "Great", value: 5, color: "from-green-400 to-emerald-400" },
@@ -69,7 +70,7 @@ const Dashboard = () => {
     breathingSessions: 0,
     journalEntries: 0
   });
-  const [activeView, setActiveView] = useState<'dashboard' | 'checkin' | 'breathing' | 'meditation' | 'journal' | 'vitality' | 'assessments' | 'challenges' | 'wearables' | 'therapists' | 'corporate' | 'community' | 'aicoach' | 'crisis' | 'family'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'checkin' | 'breathing' | 'meditation' | 'journal' | 'vitality' | 'assessments' | 'challenges' | 'wearables' | 'therapists' | 'corporate' | 'community' | 'aicoach' | 'crisis' | 'family' | 'medications'>('dashboard');
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -573,6 +574,21 @@ const Dashboard = () => {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div 
+                    className="p-4 border rounded-xl hover:bg-white/80 transition-all cursor-pointer hover:shadow-md bg-gradient-to-br from-green-50 to-emerald-50 border-green-200"
+                    onClick={() => setActiveView('medications')}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                      </svg>
+                      <h4 className="font-medium text-sm">Medications</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Track & earn points
+                    </p>
+                  </div>
+
+                  <div 
                     className="p-4 border rounded-xl hover:bg-white/80 transition-all cursor-pointer hover:shadow-md bg-white/50"
                     onClick={() => setActiveView('wearables')}
                   >
@@ -930,6 +946,18 @@ const Dashboard = () => {
               <h2 className="text-2xl font-bold">Family Wellness Hub</h2>
             </div>
             <FamilyWellnessHub />
+          </div>
+        )}
+
+        {activeView === 'medications' && (
+          <div>
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={() => setActiveView('dashboard')}>
+                ← Back to Dashboard
+              </Button>
+              <h2 className="text-2xl font-bold">Medication Tracker</h2>
+            </div>
+            <MedicationTracker />
           </div>
         )}
       </div>
