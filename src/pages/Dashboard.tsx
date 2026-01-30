@@ -45,6 +45,8 @@ import CommunityEvents from "@/components/CommunityEvents";
 import AICoach from "@/components/AICoach";
 import CrisisDetection from "@/components/CrisisDetection";
 import FamilyWellnessHub from "@/components/FamilyWellnessHub";
+import { RiskAssessmentWidget } from "@/components/RiskAssessmentWidget";
+import { VitalityPointsWidget } from "@/components/VitalityPointsWidget";
 
 const moods = [
   { emoji: "😊", label: "Great", value: 5, color: "from-green-400 to-emerald-400" },
@@ -430,6 +432,12 @@ const Dashboard = () => {
               </Card>
             </div>
 
+            {/* Risk Assessment & Vitality Points Widgets */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <RiskAssessmentWidget />
+              <VitalityPointsWidget />
+            </div>
+
             {/* Quick Mood Check */}
             <Card className="mb-8 border-0 shadow-sm bg-gradient-to-br from-slate-50 to-white">
               <CardHeader className="pb-4">
@@ -743,6 +751,11 @@ const Dashboard = () => {
                 <Target className="w-4 h-4" />
                 Challenges
               </Button>
+            </div>
+            
+            {/* Risk Assessment Widget - Discovery Health Integration */}
+            <div className="mb-6">
+              <RiskAssessmentWidget />
             </div>
             
             <VitalityPoints />
