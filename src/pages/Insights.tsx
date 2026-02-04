@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { TrendingUp, Calendar, Activity, ArrowLeft, LogOut, Brain, Heart, Moon, Zap, Loader2, MessageSquare, Sparkles } from "lucide-react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import type { User } from "@supabase/supabase-js";
+import { MoodPatternInsights } from "@/components/MoodPatternInsights";
 
 const ACTIVITY_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 
@@ -315,27 +317,35 @@ const Insights = () => {
             </div>
 
 
-            {/* Weekly Mood & Stress Chart */}
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-blue-600">Weekly Mood & Stress Tracking</CardTitle>
-                  <Badge variant="outline" className="text-blue-500 border-blue-200">Last 7 Days</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                      <YAxis domain={[0, 12]} tick={{ fontSize: 12 }} />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="mood" stroke="#3b82f6" strokeWidth={2} name="Mood Level" dot={{ fill: '#3b82f6', r: 4 }} connectNulls />
-                      <Line type="monotone" dataKey="stress" stroke="#ef4444" strokeWidth={2} name="Stress Level" dot={{ fill: '#ef4444', r: 4 }} connectNulls />
-                    </LineChart>
-                  </ResponsiveContainer>
+            {/* Tabs for different views */}
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-grid">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="patterns">Pattern Analysis</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-6 mt-6">
+                {/* Weekly Mood & Stress Chart */}
+                <Card className="bg-white border-0 shadow-sm">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-blue-600">Weekly Mood & Stress Tracking</CardTitle>
+                      <Badge variant="outline" className="text-blue-500 border-blue-200">Last 7 Days</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[280px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                          <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                          <YAxis domain={[0, 12]} tick={{ fontSize: 12 }} />
+                          <Tooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="mood" stroke="#3b82f6" strokeWidth={2} name="Mood Level" dot={{ fill: '#3b82f6', r: 4 }} connectNulls />
+                          <Line type="monotone" dataKey="stress" stroke="#ef4444" strokeWidth={2} name="Stress Level" dot={{ fill: '#ef4444', r: 4 }} connectNulls />
+                        </LineChart>
+                      </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
@@ -438,7 +448,12 @@ const Insights = () => {
                 </CardContent>
               </Card>
             </div>
-          </div>
+          </TabsContent>
+
+          <TabsContent value="patterns" className="mt-6">
+            <MoodPatternInsights />
+          </TabsContent>
+        </Tabs>
         )}
       </div>
     </div>
