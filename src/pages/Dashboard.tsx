@@ -48,6 +48,12 @@ import FamilyWellnessHub from "@/components/FamilyWellnessHub";
 import { RiskAssessmentWidget } from "@/components/RiskAssessmentWidget";
 import { VitalityPointsWidget } from "@/components/VitalityPointsWidget";
 import { MedicationTracker } from "@/components/MedicationTracker";
+import { CrisisDetectionMonitor } from "@/components/CrisisDetectionMonitor";
+import MentalHealthTwin from "@/components/MentalHealthTwin";
+import { StreakWidget } from "@/components/StreakWidget";
+import { LevelProgress } from "@/components/LevelProgress";
+import { DailyChallenges } from "@/components/DailyChallenges";
+import { gamificationService } from "@/services/gamificationService";
 
 const moods = [
   { emoji: "😊", label: "Great", value: 5, color: "from-green-400 to-emerald-400" },
@@ -70,7 +76,7 @@ const Dashboard = () => {
     breathingSessions: 0,
     journalEntries: 0
   });
-  const [activeView, setActiveView] = useState<'dashboard' | 'checkin' | 'breathing' | 'meditation' | 'journal' | 'vitality' | 'assessments' | 'challenges' | 'wearables' | 'therapists' | 'corporate' | 'community' | 'aicoach' | 'crisis' | 'family' | 'medications'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'checkin' | 'breathing' | 'meditation' | 'journal' | 'vitality' | 'assessments' | 'challenges' | 'wearables' | 'therapists' | 'corporate' | 'community' | 'aicoach' | 'crisis' | 'family' | 'medications' | 'twin'>('dashboard');
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -186,9 +192,24 @@ const Dashboard = () => {
 
         if (error) throw error;
 
+        // GAMIFICATION: Award points for mood log
+        try {
+          await gamificationService.awardPoints({
+            points: 5,
+            source: 'mood',
+            description: 'Mood logged'
+          });
+          
+          // Check for mood tracking badges
+          await gamificationService.checkBadgeEligibility('mood');
+        } catch (gamError) {
+          console.error('Gamification error:', gamError);
+          // Don't block the main flow if gamification fails
+        }
+
         setSubmitted(true);
         toast({
-          title: "Mood logged!",
+          title: "Mood logged! +5 points 🎉",
           description: "Your mood has been recorded successfully.",
         });
 
@@ -284,6 +305,16 @@ const Dashboard = () => {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+              <Card className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-0 shadow-sm bg-gradient-to-br from-purple-50 to-indigo-50 hover:shadow-purple/20 ring-2 ring-purple-200" onClick={() => setActiveView('twin')}>
+                <CardContent className="p-4 md:p-6 text-center">
+                  <div className="mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <IconWrapper icon={Brain} variant="gradient" size="lg" color="secondary" />
+                  </div>
+                  <h3 className="font-semibold mb-1 text-gray-900 text-sm">Your Twin</h3>
+                  <p className="text-xs text-gray-600">AI Insights</p>
+                </CardContent>
+              </Card>
+
               <Link to="/health-hub" className="block">
                 <Card className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-0 shadow-sm bg-gradient-to-br from-red-50 to-pink-50 hover:shadow-red/20 ring-2 ring-red-200">
                   <CardContent className="p-4 md:p-6 text-center">
@@ -431,6 +462,17 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Gamification Widgets */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <StreakWidget />
+              <LevelProgress />
+            </div>
+
+            {/* Daily Challenges */}
+            <div className="mb-8">
+              <DailyChallenges />
             </div>
 
             {/* Risk Assessment & Vitality Points Widgets */}
@@ -933,7 +975,7 @@ const Dashboard = () => {
               </Button>
               <h2 className="text-2xl font-bold">Crisis Detection & Safety</h2>
             </div>
-            <CrisisDetection />
+            <CrisisDetectionMonitor />
           </div>
         )}
 
@@ -958,6 +1000,18 @@ const Dashboard = () => {
               <h2 className="text-2xl font-bold">Medication Tracker</h2>
             </div>
             <MedicationTracker />
+          </div>
+        )}
+
+        {activeView === 'twin' && (
+          <div>
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={() => setActiveView('dashboard')}>
+                ← Back to Dashboard
+              </Button>
+              <h2 className="text-2xl font-bold">Your Mental Health Twin</h2>
+            </div>
+            <MentalHealthTwin />
           </div>
         )}
       </div>

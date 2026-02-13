@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, User, Lock, Phone, Heart, Shield, Download, Moon, Sun, Bell } from "lucide-react";
+import NotificationAnalytics from "@/components/NotificationAnalytics";
+import NotificationPreferences from "@/components/NotificationPreferences";
 
 interface ProfileData {
   full_name: string;
@@ -409,6 +411,22 @@ const Profile = () => {
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Wellness Info
               </Button>
+
+              {/* Notification Analytics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Notification Insights
+                  </CardTitle>
+                  <CardDescription>
+                    AI-powered analysis of your notification preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <NotificationAnalytics />
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
@@ -454,26 +472,8 @@ const Profile = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Preferences</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Bell className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Notifications</p>
-                        <p className="text-sm text-muted-foreground">Receive reminders and updates</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={profile.notifications_enabled}
-                      onCheckedChange={(checked) => setProfile({ ...profile, notifications_enabled: checked })}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Notification Preferences */}
+              <NotificationPreferences />
 
               <Card>
                 <CardHeader>

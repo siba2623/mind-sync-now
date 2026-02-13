@@ -32,7 +32,7 @@ export const CrisisDetectionMonitor = () => {
         .from('crisis_detections')
         .select('*')
         .eq('user_id', user.id)
-        .order('timestamp', { ascending: false })
+        .order('detected_at', { ascending: false })
         .limit(5);
 
       setRecentDetections(data || []);
@@ -192,7 +192,7 @@ export const CrisisDetectionMonitor = () => {
                       </span>
                     </div>
                     <span className="text-xs">
-                      {new Date(detection.timestamp).toLocaleDateString()}
+                      {new Date(detection.detected_at).toLocaleDateString()}
                     </span>
                   </div>
                   <p className="text-xs">

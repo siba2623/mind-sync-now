@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { gamificationService } from '@/services/gamificationService';
 import { 
   Play, 
   Pause, 
@@ -185,6 +186,7 @@ const MeditationTimer = () => {
     }
 
     const sessionDuration = duration[0] * 60; // Convert to seconds
+    const durationMinutes = duration[0];
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -198,15 +200,38 @@ const MeditationTimer = () => {
             ambient_sound: selectedSound.name,
             created_at: new Date().toISOString()
           }]);
+
+        // GAMIFICATION: Award points for meditation
+        try {
+          const pointsEarned = durationMinutes * 2; // 2 points per minute
+          await gamificationService.awardPoints({
+            points: pointsEarned,
+            source: 'meditation',
+            description: `Meditated for ${durationMinutes} minutes`
+          });
+          
+          // Check for meditation badges
+          await gamificationService.checkBadgeEligibility('meditation');
+          
+          toast({
+            title: `Meditation Complete! +${pointsEarned} points 🧘‍♀️`,
+            description: `You meditated for ${durationMinutes} minutes using ${selectedType.name}`,
+          });
+        } catch (gamError) {
+          console.error('Gamification error:', gamError);
+          toast({
+            title: "Meditation Complete! 🧘‍♀️",
+            description: `You meditated for ${durationMinutes} minutes using ${selectedType.name}`,
+          });
+        }
       }
     } catch (error) {
       console.error('Error saving meditation session:', error);
+      toast({
+        title: "Meditation Complete! 🧘‍♀️",
+        description: `You meditated for ${durationMinutes} minutes using ${selectedType.name}`,
+      });
     }
-
-    toast({
-      title: "Meditation Complete! 🧘‍♀️",
-      description: `You meditated for ${duration[0]} minutes using ${selectedType.name}`,
-    });
   };
 
   const startMeditation = () => {

@@ -45,5 +45,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>MindSync needs access to your health data to provide personalized mental wellness insights based on your sleep patterns, heart rate, activity levels, and other health metrics.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>MindSync would like to save mindfulness and mental wellness data to your Health app.</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>MindSync uses your health records to provide comprehensive mental health support.</string>
 </dict>
 </plist>

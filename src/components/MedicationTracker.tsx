@@ -19,12 +19,17 @@ import {
   Calendar,
   AlertTriangle,
   Trophy,
-  Package
+  Package,
+  Shield,
+  Brain,
+  Activity
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { format, subDays, differenceInDays } from "date-fns";
+import { format, subDays, differenceInDays, addDays } from "date-fns";
 import { notificationService } from "@/services/notificationService";
+import { adherencePredictionService } from "@/services/phase3/adherencePrediction";
+import type { AdherenceRiskPrediction, AdherenceInsights } from "@/services/phase3/types";
 
 interface Medication {
   id: string;
@@ -55,6 +60,11 @@ interface AdherenceStats {
   missedDoses: number;
 }
 
+interface MedicationRiskPrediction {
+  medicationId: string;
+  prediction: AdherenceRiskPrediction;
+}
+
 export const MedicationTracker = () => {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -70,6 +80,9 @@ export const MedicationTracker = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSideEffectForm, setShowSideEffectForm] = useState<string | null>(null);
   const [sideEffectNote, setSideEffectNote] = useState('');
+  const [riskPredictions, setRiskPredictions] = useState<MedicationRiskPrediction[]>([]);
+  const [adherenceInsights, setAdherenceInsights] = useState<AdherenceInsights | null>(null);
+  const [showForecast, setShowForecast] = useState(false);
   const { toast } = useToast();
 
   // Form state
@@ -93,8 +106,42 @@ export const MedicationTracker = () => {
   useEffect(() => {
     if (medications.length > 0 && medicationLogs.length >= 0) {
       calculateAdherenceStats();
+      loadRiskPredictions();
     }
   }, [medications, medicationLogs]);
+
+  const loadRiskPredictions = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const predictions: MedicationRiskPrediction[] = [];
+      
+      for (const med of medications) {
+        try {
+          const prediction = await adherencePredictionService.predictAdherenceRisk(med.id, user.id);
+          predictions.push({
+            medicationId: med.id,
+            prediction
+          });
+        } catch (error) {
+          console.log(`Could not predict risk for ${med.name}:`, error);
+        }
+      }
+
+      setRiskPredictions(predictions);
+
+      // Load overall insights
+      try {
+        const insights = await adherencePredictionService.getAdherenceInsights(user.id);
+        setAdherenceInsights(insights);
+      } catch (error) {
+        console.log('Could not load adherence insights:', error);
+      }
+    } catch (error) {
+      console.log('Risk prediction not available:', error);
+    }
+  };
 
   const loadMedications = async () => {
     try {
@@ -418,6 +465,32 @@ export const MedicationTracker = () => {
     return "text-red-600 bg-red-50";
   };
 
+  const getRiskPrediction = (medId: string) => {
+    return riskPredictions.find(p => p.medicationId === medId)?.prediction;
+  };
+
+  const getRiskColor = (riskLevel: 'low' | 'moderate' | 'high') => {
+    switch (riskLevel) {
+      case 'low':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'moderate':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'high':
+        return 'bg-red-100 text-red-700 border-red-200';
+    }
+  };
+
+  const getRiskIcon = (riskLevel: 'low' | 'moderate' | 'high') => {
+    switch (riskLevel) {
+      case 'low':
+        return <Shield className="w-3 h-3" />;
+      case 'moderate':
+        return <AlertCircle className="w-3 h-3" />;
+      case 'high':
+        return <AlertTriangle className="w-3 h-3" />;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Adherence Stats Dashboard */}
@@ -599,6 +672,88 @@ export const MedicationTracker = () => {
           </Card>
         )}
 
+        {/* Streak Protection Alerts */}
+        {adherenceInsights && adherenceInsights.streakProtectionAlerts.length > 0 && (
+          <Card className="p-4 mb-6 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Flame className="w-5 h-5 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-orange-900 mb-2">🔥 Protect Your Streak!</h4>
+                {adherenceInsights.streakProtectionAlerts.map((alert, idx) => {
+                  const med = medications.find(m => m.id === alert.medicationId);
+                  return (
+                    <div key={idx} className="mb-3 last:mb-0">
+                      <p className="text-sm font-medium text-orange-800">
+                        {med?.name} - {alert.currentStreak} day streak at risk ({alert.riskOfBreaking}% chance)
+                      </p>
+                      <p className="text-xs text-orange-700 mt-1">
+                        💡 {alert.protectionStrategy}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* 7-Day Forecast */}
+        {adherenceInsights && (
+          <Card className="p-4 mb-6 bg-gradient-to-r from-blue-50 to-cyan-50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-blue-600" />
+                <h4 className="font-semibold text-blue-900">AI Adherence Forecast</h4>
+              </div>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={() => setShowForecast(!showForecast)}
+                className="text-xs"
+              >
+                {showForecast ? 'Hide' : 'Show'} Forecast
+              </Button>
+            </div>
+            
+            {showForecast && (
+              <div className="space-y-2">
+                {adherenceInsights.sevenDayForecast.map((day, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-2 bg-white rounded-lg">
+                    <div className="text-xs font-medium text-gray-600 w-16">
+                      {format(day.date, 'EEE, MMM d')}
+                    </div>
+                    <div className="flex-1">
+                      <Progress value={day.predictedAdherence} className="h-2" />
+                    </div>
+                    <div className="text-xs font-semibold w-12 text-right">
+                      {day.predictedAdherence}%
+                    </div>
+                    <Badge 
+                      className={`text-xs ${getRiskColor(day.riskLevel)}`}
+                      variant="outline"
+                    >
+                      {day.riskLevel}
+                    </Badge>
+                  </div>
+                ))}
+                
+                {adherenceInsights.personalizedTips.length > 0 && (
+                  <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                    <p className="text-xs font-semibold text-blue-900 mb-2">💡 Personalized Tips:</p>
+                    <ul className="space-y-1">
+                      {adherenceInsights.personalizedTips.map((tip, idx) => (
+                        <li key={idx} className="text-xs text-blue-800">• {tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           {medications.length === 0 ? (
             <div className="col-span-full text-center py-12">
@@ -613,6 +768,7 @@ export const MedicationTracker = () => {
               const isTaken = todaysTaken.has(med.id);
               const isTimeNow = isTimeForMedication(med.times);
               const lowOnPills = needsRefill(med);
+              const riskPrediction = getRiskPrediction(med.id);
 
               return (
                 <Card
@@ -622,6 +778,8 @@ export const MedicationTracker = () => {
                       ? "border-2 border-primary bg-primary/5"
                       : lowOnPills
                       ? "border-2 border-orange-300 bg-orange-50/50"
+                      : riskPrediction && riskPrediction.riskLevel === 'high'
+                      ? "border-2 border-red-300 bg-red-50/30"
                       : ""
                   }`}
                 >
@@ -661,7 +819,47 @@ export const MedicationTracker = () => {
                           Refill
                         </Badge>
                       )}
+                      {riskPrediction && (
+                        <Badge 
+                          className={`text-xs ${getRiskColor(riskPrediction.riskLevel)}`}
+                          variant="outline"
+                        >
+                          {getRiskIcon(riskPrediction.riskLevel)}
+                          <span className="ml-1">{riskPrediction.probability}% risk</span>
+                        </Badge>
+                      )}
                     </div>
+
+                    {/* AI Risk Insights */}
+                    {riskPrediction && riskPrediction.riskLevel !== 'low' && (
+                      <div className={`p-2 rounded-lg border ${
+                        riskPrediction.riskLevel === 'high' 
+                          ? 'bg-red-50 border-red-200' 
+                          : 'bg-yellow-50 border-yellow-200'
+                      }`}>
+                        <div className="flex items-start gap-2">
+                          <Activity className={`w-4 h-4 mt-0.5 ${
+                            riskPrediction.riskLevel === 'high' ? 'text-red-600' : 'text-yellow-600'
+                          }`} />
+                          <div className="flex-1">
+                            <p className={`text-xs font-semibold mb-1 ${
+                              riskPrediction.riskLevel === 'high' ? 'text-red-900' : 'text-yellow-900'
+                            }`}>
+                              {riskPrediction.riskLevel === 'high' ? '⚠️ High Risk' : '⚡ Moderate Risk'}
+                            </p>
+                            <div className="space-y-0.5">
+                              {riskPrediction.factors.slice(0, 2).map((factor, idx) => (
+                                <p key={idx} className={`text-xs ${
+                                  riskPrediction.riskLevel === 'high' ? 'text-red-700' : 'text-yellow-700'
+                                }`}>
+                                  {factor.impact === 'negative' ? '↓' : '↑'} {factor.description}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                       
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <p className="flex items-center gap-1">

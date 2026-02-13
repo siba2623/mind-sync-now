@@ -556,6 +556,180 @@ export type Database = {
         }
         Relationships: []
       }
+      crisis_detections: {
+        Row: {
+          detection_id: string
+          user_id: string
+          text_analyzed: string
+          crisis_level: 'none' | 'low' | 'moderate' | 'high' | 'critical'
+          confidence: number
+          triggers: string[]
+          recommended_action: string
+          detected_at: string
+          intervention_triggered: boolean
+          intervention_type: string | null
+          created_at: string
+        }
+        Insert: {
+          detection_id?: string
+          user_id: string
+          text_analyzed: string
+          crisis_level: 'none' | 'low' | 'moderate' | 'high' | 'critical'
+          confidence: number
+          triggers: string[]
+          recommended_action: string
+          detected_at?: string
+          intervention_triggered?: boolean
+          intervention_type?: string | null
+          created_at?: string
+        }
+        Update: {
+          detection_id?: string
+          user_id?: string
+          text_analyzed?: string
+          crisis_level?: 'none' | 'low' | 'moderate' | 'high' | 'critical'
+          confidence?: number
+          triggers?: string[]
+          recommended_action?: string
+          detected_at?: string
+          intervention_triggered?: boolean
+          intervention_type?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      care_coordinator_alerts: {
+        Row: {
+          alert_id: string
+          user_id: string
+          assessment_id: string | null
+          alert_type: string
+          risk_level: string
+          details: Json
+          status: 'pending' | 'acknowledged' | 'in_progress' | 'resolved' | 'escalated'
+          priority: string
+          assigned_to: string | null
+          acknowledged_at: string | null
+          resolved_at: string | null
+          resolution_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          alert_id?: string
+          user_id: string
+          assessment_id?: string | null
+          alert_type: string
+          risk_level: string
+          details: Json
+          status?: 'pending' | 'acknowledged' | 'in_progress' | 'resolved' | 'escalated'
+          priority: string
+          assigned_to?: string | null
+          acknowledged_at?: string | null
+          resolved_at?: string | null
+          resolution_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          alert_id?: string
+          user_id?: string
+          assessment_id?: string | null
+          alert_type?: string
+          risk_level?: string
+          details?: Json
+          status?: 'pending' | 'acknowledged' | 'in_progress' | 'resolved' | 'escalated'
+          priority?: string
+          assigned_to?: string | null
+          acknowledged_at?: string | null
+          resolved_at?: string | null
+          resolution_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      emergency_contacts: {
+        Row: {
+          contact_id: string
+          user_id: string
+          name: string
+          relationship: string | null
+          phone_encrypted: string
+          email_encrypted: string | null
+          alert_enabled: boolean
+          priority_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id?: string
+          user_id: string
+          name: string
+          relationship?: string | null
+          phone_encrypted: string
+          email_encrypted?: string | null
+          alert_enabled?: boolean
+          priority_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          user_id?: string
+          name?: string
+          relationship?: string | null
+          phone_encrypted?: string
+          email_encrypted?: string | null
+          alert_enabled?: boolean
+          priority_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          notification_id: string
+          user_id: string
+          type: string
+          title: string
+          message: string
+          priority: 'low' | 'medium' | 'high' | 'urgent' | 'critical'
+          read: boolean
+          read_at: string | null
+          action_url: string | null
+          expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          notification_id?: string
+          user_id: string
+          type: string
+          title: string
+          message: string
+          priority?: 'low' | 'medium' | 'high' | 'urgent' | 'critical'
+          read?: boolean
+          read_at?: string | null
+          action_url?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          notification_id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          message?: string
+          priority?: 'low' | 'medium' | 'high' | 'urgent' | 'critical'
+          read?: boolean
+          read_at?: string | null
+          action_url?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

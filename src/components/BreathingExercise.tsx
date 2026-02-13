@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { gamificationService } from '@/services/gamificationService';
 import { 
   Play, 
   Pause, 
@@ -140,15 +141,37 @@ const BreathingExercise = () => {
             cycles_completed: selectedPattern.cycles,
             created_at: new Date().toISOString()
           }]);
+
+        // GAMIFICATION: Award points for breathing exercise
+        try {
+          await gamificationService.awardPoints({
+            points: 8,
+            source: 'breathing',
+            description: 'Breathing exercise completed'
+          });
+          
+          // Check for breathing badges
+          await gamificationService.checkBadgeEligibility('breathing');
+          
+          toast({
+            title: "Breathing Exercise Complete! +8 points 🌬️",
+            description: `You completed ${selectedPattern.cycles} cycles of ${selectedPattern.name}`,
+          });
+        } catch (gamError) {
+          console.error('Gamification error:', gamError);
+          toast({
+            title: "Breathing Exercise Complete! 🌬️",
+            description: `You completed ${selectedPattern.cycles} cycles of ${selectedPattern.name}`,
+          });
+        }
       }
     } catch (error) {
       console.error('Error saving breathing session:', error);
+      toast({
+        title: "Breathing Exercise Complete! 🌬️",
+        description: `You completed ${selectedPattern.cycles} cycles of ${selectedPattern.name}`,
+      });
     }
-
-    toast({
-      title: "Breathing Exercise Complete! 🌬️",
-      description: `You completed ${selectedPattern.cycles} cycles of ${selectedPattern.name}`,
-    });
   };
 
   const startExercise = () => {

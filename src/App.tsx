@@ -23,6 +23,9 @@ import OnboardingTutorial from "./components/OnboardingTutorial";
 import DarkModeToggle from "./components/DarkModeToggle";
 import LanguageSelector from "./components/LanguageSelector";
 import EscalationQueue from "./components/EscalationQueue";
+import PeerSupport from "./pages/PeerSupport";
+import PeerProfileSetup from "./pages/PeerProfileSetup";
+import Achievements from "./pages/Achievements";
 import { Navigate } from 'react-router-dom'
 
 const queryClient = new QueryClient();
@@ -65,6 +68,9 @@ const AppContent = () => {
         <Route path="/health-hub" element={<HealthHub />} />
         <Route path="/therapists" element={<Therapists />} />
         <Route path="/community" element={<Community />} />
+        <Route path="/peer-support" element={<PeerSupport />} />
+        <Route path="/peer-support/setup" element={<PeerProfileSetup />} />
+        <Route path="/achievements" element={<Achievements />} />
         <Route path="/callback" element={<SpotifyCallback />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/escalation" element={<ProtectedEscalation />} />

@@ -290,7 +290,7 @@ class CrisisDetectionService {
         confidence: result.confidence,
         triggers: result.triggers,
         recommended_action: result.recommendedAction,
-        timestamp: new Date().toISOString()
+        detected_at: new Date().toISOString()
       });
     } catch (error) {
       console.error('Error storing crisis detection:', error);
@@ -345,8 +345,14 @@ class CrisisDetectionService {
     await supabase.from('care_coordinator_alerts').insert({
       user_id: userId,
       alert_type: 'CRITICAL_CRISIS',
-      crisis_level: result.level,
-      details: result,
+      risk_level: result.level,
+      details: {
+        level: result.level,
+        confidence: result.confidence,
+        triggers: result.triggers,
+        recommendedAction: result.recommendedAction,
+        urgency: result.urgency
+      },
       status: 'pending',
       priority: 'immediate',
       created_at: new Date().toISOString()
@@ -380,8 +386,14 @@ class CrisisDetectionService {
     await supabase.from('care_coordinator_alerts').insert({
       user_id: userId,
       alert_type: 'HIGH_RISK_CRISIS',
-      crisis_level: result.level,
-      details: result,
+      risk_level: result.level,
+      details: {
+        level: result.level,
+        confidence: result.confidence,
+        triggers: result.triggers,
+        recommendedAction: result.recommendedAction,
+        urgency: result.urgency
+      },
       status: 'pending',
       priority: 'urgent',
       created_at: new Date().toISOString()
@@ -415,8 +427,14 @@ class CrisisDetectionService {
     await supabase.from('care_coordinator_alerts').insert({
       user_id: userId,
       alert_type: 'MODERATE_CONCERN',
-      crisis_level: result.level,
-      details: result,
+      risk_level: result.level,
+      details: {
+        level: result.level,
+        confidence: result.confidence,
+        triggers: result.triggers,
+        recommendedAction: result.recommendedAction,
+        urgency: result.urgency
+      },
       status: 'pending',
       priority: 'normal',
       created_at: new Date().toISOString()

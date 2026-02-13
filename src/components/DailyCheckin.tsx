@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { gamificationService } from '@/services/gamificationService';
 import { 
   Heart, 
   Brain, 
@@ -100,10 +101,31 @@ const DailyCheckin = ({ onComplete }: { onComplete?: () => void }) => {
 
       if (error) throw error;
 
-      toast({
-        title: "Check-in Complete! 🌟",
-        description: "Your daily reflection has been saved.",
-      });
+      // GAMIFICATION: Award points and update streak
+      try {
+        await gamificationService.awardPoints({
+          points: 10,
+          source: 'checkin',
+          description: 'Daily check-in completed'
+        });
+        
+        // Update streak
+        const newStreak = await gamificationService.updateStreak();
+        
+        // Check for wellness badges
+        await gamificationService.checkBadgeEligibility('wellness');
+        
+        toast({
+          title: `Check-in Complete! +10 points 🌟`,
+          description: `Your daily reflection has been saved. ${newStreak > 1 ? `${newStreak} day streak! 🔥` : ''}`,
+        });
+      } catch (gamError) {
+        console.error('Gamification error:', gamError);
+        toast({
+          title: "Check-in Complete! 🌟",
+          description: "Your daily reflection has been saved.",
+        });
+      }
 
       onComplete?.();
     } catch (error: any) {

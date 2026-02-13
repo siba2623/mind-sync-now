@@ -1,5 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
+import { calculateOptimalSendTime, recordEngagement, type NotificationType } from './phase3/notificationTiming';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface NotificationSchedule {
   id: number;
@@ -15,6 +17,35 @@ export interface NotificationSchedule {
 class NotificationService {
   private isNative = Capacitor.isNativePlatform();
   private notificationQueue: Array<{id: number, scheduledFor: Date}> = [];
+  private userId: string | null = null;
+
+  constructor() {
+    this.initializeUserId();
+    this.setupEngagementTracking();
+  }
+
+  private async initializeUserId() {
+    const { data: { user } } = await supabase.auth.getUser();
+    this.userId = user?.id || null;
+  }
+
+  private setupEngagementTracking() {
+    if (!this.isNative) return;
+
+    // Track notification actions
+    LocalNotifications.addListener('localNotificationActionPerformed', async (notification) => {
+      if (!this.userId) return;
+
+      const action = notification.actionId === 'tap' ? 'opened' : 'dismissed';
+      const notificationId = notification.notification.id.toString();
+
+      try {
+        await recordEngagement(notificationId, this.userId, action, new Date());
+      } catch (error) {
+        console.error('Failed to record engagement:', error);
+      }
+    });
+  }
 
   async requestPermissions(): Promise<boolean> {
     if (!this.isNative) {
@@ -38,9 +69,27 @@ class NotificationService {
     const hasPermission = await this.requestPermissions();
     if (!hasPermission) return;
 
-    const [hours, minutes] = time.split(':').map(Number);
-    const scheduleTime = new Date();
-    scheduleTime.setHours(hours, minutes, 0, 0);
+    // Use AI-powered optimal timing if user is logged in
+    let scheduleTime: Date;
+    if (this.userId) {
+      try {
+        const optimalTime = await calculateOptimalSendTime(
+          'medication_reminder',
+          this.userId,
+          'medium'
+        );
+        scheduleTime = optimalTime.recommendedTime;
+      } catch (error) {
+        console.error('Failed to calculate optimal time, using default:', error);
+        const [hours, minutes] = time.split(':').map(Number);
+        scheduleTime = new Date();
+        scheduleTime.setHours(hours, minutes, 0, 0);
+      }
+    } else {
+      const [hours, minutes] = time.split(':').map(Number);
+      scheduleTime = new Date();
+      scheduleTime.setHours(hours, minutes, 0, 0);
+    }
 
     if (scheduleTime < new Date()) {
       scheduleTime.setDate(scheduleTime.getDate() + 1);
@@ -63,6 +112,7 @@ class NotificationService {
             extra: {
               medicationId,
               medicationName,
+              notificationType: 'medication_reminder',
             },
           },
         ],
@@ -80,6 +130,43 @@ class NotificationService {
     const hasPermission = await this.requestPermissions();
     if (!hasPermission) return;
 
+    // Use AI-powered optimal timing if user is logged in
+    if (this.userId) {
+      try {
+        const optimalTime = await calculateOptimalSendTime(
+          'mood_checkin',
+          this.userId,
+          'low'
+        );
+        
+        if (this.isNative) {
+          await LocalNotifications.schedule({
+            notifications: [
+              {
+                id: 9000,
+                title: '🌟 Mood Check-In',
+                body: 'How are you feeling right now? Take a moment to log your mood.',
+                schedule: {
+                  at: optimalTime.recommendedTime,
+                  repeats: true,
+                  every: 'day',
+                },
+                sound: 'default',
+                actionTypeId: 'MOOD_CHECKIN',
+                extra: {
+                  notificationType: 'mood_checkin',
+                },
+              },
+            ],
+          });
+        }
+        return;
+      } catch (error) {
+        console.error('Failed to calculate optimal time, using defaults:', error);
+      }
+    }
+
+    // Fallback to default times
     times.forEach(async (time, index) => {
       const [hours, minutes] = time.split(':').map(Number);
       const scheduleTime = new Date();
@@ -99,6 +186,9 @@ class NotificationService {
               },
               sound: 'default',
               actionTypeId: 'MOOD_CHECKIN',
+              extra: {
+                notificationType: 'mood_checkin',
+              },
             },
           ],
         });
@@ -116,6 +206,23 @@ class NotificationService {
       ? 'Your wellness indicators suggest you may need support. Tap to view recommendations.'
       : 'Your wellness patterns have changed. Check your personalized recommendations.';
 
+    // High priority alerts send immediately, bypassing optimal timing
+    const priority = urgency ? 'high' : 'medium';
+    let sendTime = new Date(Date.now() + 1000);
+
+    if (!urgency && this.userId) {
+      try {
+        const optimalTime = await calculateOptimalSendTime(
+          'risk_alert',
+          this.userId,
+          priority
+        );
+        sendTime = optimalTime.recommendedTime;
+      } catch (error) {
+        console.error('Failed to calculate optimal time:', error);
+      }
+    }
+
     if (this.isNative) {
       await LocalNotifications.schedule({
         notifications: [
@@ -123,12 +230,13 @@ class NotificationService {
             id: Date.now(),
             title,
             body,
-            schedule: { at: new Date(Date.now() + 1000) },
+            schedule: { at: sendTime },
             sound: urgency ? 'default' : undefined,
             actionTypeId: 'RISK_ALERT',
             extra: {
               riskLevel,
               recommendations: recommendations.slice(0, 3),
+              notificationType: 'risk_alert',
             },
           },
         ],
@@ -188,6 +296,21 @@ class NotificationService {
 
     const title = `${icons[category]} Wellness Tip`;
 
+    // Use AI-powered optimal timing
+    let sendTime = new Date(Date.now() + 1000);
+    if (this.userId) {
+      try {
+        const optimalTime = await calculateOptimalSendTime(
+          'wellness_tip',
+          this.userId,
+          'low'
+        );
+        sendTime = optimalTime.recommendedTime;
+      } catch (error) {
+        console.error('Failed to calculate optimal time:', error);
+      }
+    }
+
     if (this.isNative) {
       await LocalNotifications.schedule({
         notifications: [
@@ -195,10 +318,13 @@ class NotificationService {
             id: Date.now(),
             title,
             body: tip,
-            schedule: { at: new Date(Date.now() + 1000) },
+            schedule: { at: sendTime },
             sound: undefined,
             actionTypeId: 'WELLNESS_TIP',
-            extra: { category },
+            extra: { 
+              category,
+              notificationType: 'wellness_tip',
+            },
           },
         ],
       });

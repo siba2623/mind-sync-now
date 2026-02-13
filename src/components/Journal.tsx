@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { Plus, BookOpen, Edit, Trash2, Heart, Calendar, Search, X, Loader2 } from 'lucide-react';
+import { crisisDetectionService } from '@/services/crisisDetectionService';
 
 interface JournalEntry {
   id: string;
@@ -124,6 +125,14 @@ const Journal = () => {
           .insert([entryData]);
         if (error) throw error;
         toast({ title: 'Saved!', description: 'Journal entry created successfully' });
+      }
+
+      // Run crisis detection on the journal entry
+      try {
+        await crisisDetectionService.analyzeJournalEntry(user.id, formData.content);
+      } catch (crisisError) {
+        console.error('Crisis detection error:', crisisError);
+        // Don't block the save if crisis detection fails
       }
 
       setIsDialogOpen(false);
