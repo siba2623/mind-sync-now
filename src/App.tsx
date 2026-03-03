@@ -18,6 +18,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Therapists from "./pages/Therapists";
 import Community from "./pages/Community";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
+import Pricing from "./pages/Pricing";
 import MobileNavigation from "./components/MobileNavigation";
 import OnboardingTutorial from "./components/OnboardingTutorial";
 import DarkModeToggle from "./components/DarkModeToggle";
@@ -26,13 +28,12 @@ import EscalationQueue from "./components/EscalationQueue";
 import PeerSupport from "./pages/PeerSupport";
 import PeerProfileSetup from "./pages/PeerProfileSetup";
 import Achievements from "./pages/Achievements";
-import { Navigate } from 'react-router-dom'
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const location = useLocation();
-  const showMobileNav = !["/", "/auth", "/callback", "/admin"].includes(location.pathname);
+  const showMobileNav = !["/", "/auth", "/callback", "/admin", "/onboarding", "/pricing"].includes(location.pathname);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
@@ -59,6 +60,8 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/activities" element={<Activities />} />

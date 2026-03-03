@@ -67,17 +67,25 @@ const Auth = () => {
           email: validationData.email,
           password: validationData.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/onboarding`,
             data: { full_name: validationData.fullName || "" },
           },
         });
         if (error) throw error;
-        toast({
-          title: "Account created!",
-          description: data.user?.email_confirmed_at
-            ? "Welcome to MindSync!"
-            : "Please check your email to confirm your account.",
-        });
+        
+        // If email is auto-confirmed (dev mode), redirect to onboarding
+        if (data.user?.email_confirmed_at) {
+          toast({
+            title: "Account created!",
+            description: "Welcome to MindSync! Let's get you started.",
+          });
+          navigate('/onboarding');
+        } else {
+          toast({
+            title: "Account created!",
+            description: "Please check your email to confirm your account.",
+          });
+        }
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
